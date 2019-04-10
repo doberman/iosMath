@@ -137,6 +137,7 @@
 		BB4250423755E0D3CD2BA614 /* Pods-iosMathTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathTests/Pods-iosMathTests.debug.xcconfig"; sourceTree = "<group>"; };
 		D93290960585498BBAEE4535 /* Pods-iosMathExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathExample.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathExample/Pods-iosMathExample.debug.xcconfig"; sourceTree = "<group>"; };
 		D94FE3501B90DCA5002D11E2 /* IosMath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IosMath.h; sourceTree = "<group>"; };
+		EE7165E5225EA3B400C37484 /* iosMath.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = iosMath.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,6 +206,7 @@
 		49965EF317CBBA2700A555C5 = {
 			isa = PBXGroup;
 			children = (
+				EE7165E5225EA3B400C37484 /* iosMath.podspec */,
 				498730AB17D548DB0041B02B /* QuartzCore.framework */,
 				49B83EF217CE74620014B739 /* CoreText.framework */,
 				4987307717D546800041B02B /* iosMath */,
@@ -492,6 +494,12 @@
 			attributes = {
 				LastTestingUpgradeCheck = 0630;
 				LastUpgradeCheck = 0940;
+				TargetAttributes = {
+					49965EFB17CBBA2700A555C5 = {
+						DevelopmentTeam = T984FR9Q54;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 49965EF717CBBA2700A555C5 /* Build configuration list for PBXProject "iosMath" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -575,8 +583,8 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-iosMathTests/Pods-iosMathTests-resources.sh",
-        "${PODS_CONFIGURATION_BUILD_DIR}/iosMath-iOS6.0/mathFonts.bundle",
+				"${PODS_ROOT}/Target Support Files/Pods-iosMathTests/Pods-iosMathTests-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/iosMath-iOS8.0/mathFonts.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
@@ -584,7 +592,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-iosMathTests/Pods-iosMathTests-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosMathTests/Pods-iosMathTests-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		C897D2526C33F372299D91F4 /* [CP] Copy Pods Resources */ = {
@@ -593,7 +601,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-iosMathExample/Pods-iosMathExample-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-iosMathExample/Pods-iosMathExample-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/iosMath-iOS9.0/mathFonts.bundle",
 			);
 			name = "[CP] Copy Pods Resources";
@@ -602,7 +610,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-iosMathExample/Pods-iosMathExample-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosMathExample/Pods-iosMathExample-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		E29EDA86FBD87D988339E97B /* [CP] Check Pods Manifest.lock */ = {
