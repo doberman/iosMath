@@ -1,16 +1,16 @@
 PODS:
-  - DMiosMath (0.9.5)
+  - iosMath (0.9.7)
 
 DEPENDENCIES:
-  - DMiosMath (from `./`)
+  - iosMath (from `./`)
 
 EXTERNAL SOURCES:
-  DMiosMath:
+  iosMath:
     :path: "./"
 
 SPEC CHECKSUMS:
-  DMiosMath: 23471aa45ad4722b7cbe63d943824d1e418c8c6e
+  iosMath: 82b8615dc0a82d18f5f22cb14edf5f6b023bfb61
 
-PODFILE CHECKSUM: b918b929fe1297eb3a9058b2873c3ca3529610b7
+PODFILE CHECKSUM: bade56080a0531a08830155fc215a0a5b44dd183
 
-COCOAPODS: 1.6.1
+COCOAPODS: 1.7.0.beta.3
