@@ -57,6 +57,7 @@
 		D94FE3541B90DE46002D11E2 /* MTMathListDisplay.h in Headers */ = {isa = PBXBuildFile; fileRef = 492EECF317DAED9000939107 /* MTMathListDisplay.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D94FE3551B90DE5B002D11E2 /* MTMathList.h in Headers */ = {isa = PBXBuildFile; fileRef = 492EED0217DAEDB500939107 /* MTMathList.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D94FE3591B90DE91002D11E2 /* MTMathListBuilder.h in Headers */ = {isa = PBXBuildFile; fileRef = 492EED0417DAEDB500939107 /* MTMathListBuilder.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		EEB4D79E225F95C700F2CB8D /* MTFont+Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 49DEC80B1CEF1028000053CD /* MTFont+Internal.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -363,7 +364,6 @@
 			children = (
 				492EECF717DAED9000939107 /* MTFontMathTable.h */,
 				492EECF817DAED9000939107 /* MTFontMathTable.m */,
-				49DEC80B1CEF1028000053CD /* MTFont+Internal.h */,
 				49DEC8041CED71C3000053CD /* MTFont.h */,
 				49DEC8051CED71C3000053CD /* MTFont.m */,
 				492EECF917DAED9000939107 /* MTFontManager.h */,
@@ -377,6 +377,7 @@
 			children = (
 				49EEFD7A1D19B664002D15C4 /* MTTypesetter.h */,
 				49EEFD7B1D19B664002D15C4 /* MTTypesetter.m */,
+				49DEC80B1CEF1028000053CD /* MTFont+Internal.h */,
 				49EEFD7E1D19B94C002D15C4 /* MTMathListDisplayInternal.h */,
 			);
 			path = internal;
@@ -407,6 +408,7 @@
 				D94FE3551B90DE5B002D11E2 /* MTMathList.h in Headers */,
 				49DEC8061CED71C3000053CD /* MTFont.h in Headers */,
 				49EEFD7C1D19B664002D15C4 /* MTTypesetter.h in Headers */,
+				EEB4D79E225F95C700F2CB8D /* MTFont+Internal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
