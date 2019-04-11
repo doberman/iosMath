@@ -137,7 +137,7 @@
 		BB4250423755E0D3CD2BA614 /* Pods-iosMathTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathTests/Pods-iosMathTests.debug.xcconfig"; sourceTree = "<group>"; };
 		D93290960585498BBAEE4535 /* Pods-iosMathExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathExample.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathExample/Pods-iosMathExample.debug.xcconfig"; sourceTree = "<group>"; };
 		D94FE3501B90DCA5002D11E2 /* IosMath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IosMath.h; sourceTree = "<group>"; };
-		EE96B586225F5D48000F836D /* iosMath.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = iosMath.podspec; sourceTree = "<group>"; };
+		EE96B586225F5D48000F836D /* iosMath.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = iosMath.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -363,6 +363,7 @@
 			children = (
 				492EECF717DAED9000939107 /* MTFontMathTable.h */,
 				492EECF817DAED9000939107 /* MTFontMathTable.m */,
+				49DEC80B1CEF1028000053CD /* MTFont+Internal.h */,
 				49DEC8041CED71C3000053CD /* MTFont.h */,
 				49DEC8051CED71C3000053CD /* MTFont.m */,
 				492EECF917DAED9000939107 /* MTFontManager.h */,
@@ -374,7 +375,6 @@
 		49EEFD791D19B616002D15C4 /* internal */ = {
 			isa = PBXGroup;
 			children = (
-				49DEC80B1CEF1028000053CD /* MTFont+Internal.h */,
 				49EEFD7A1D19B664002D15C4 /* MTTypesetter.h */,
 				49EEFD7B1D19B664002D15C4 /* MTTypesetter.m */,
 				49EEFD7E1D19B94C002D15C4 /* MTMathListDisplayInternal.h */,
