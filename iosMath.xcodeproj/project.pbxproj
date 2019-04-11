@@ -137,7 +137,7 @@
 		BB4250423755E0D3CD2BA614 /* Pods-iosMathTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathTests/Pods-iosMathTests.debug.xcconfig"; sourceTree = "<group>"; };
 		D93290960585498BBAEE4535 /* Pods-iosMathExample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-iosMathExample.debug.xcconfig"; path = "Pods/Target Support Files/Pods-iosMathExample/Pods-iosMathExample.debug.xcconfig"; sourceTree = "<group>"; };
 		D94FE3501B90DCA5002D11E2 /* IosMath.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IosMath.h; sourceTree = "<group>"; };
-		EE7165E5225EA3B400C37484 /* iosMath.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = iosMath.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
+		EE96B586225F5D48000F836D /* iosMath.podspec */ = {isa = PBXFileReference; lastKnownFileType = text; path = iosMath.podspec; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,7 +206,7 @@
 		49965EF317CBBA2700A555C5 = {
 			isa = PBXGroup;
 			children = (
-				EE7165E5225EA3B400C37484 /* iosMath.podspec */,
+				EE96B586225F5D48000F836D /* iosMath.podspec */,
 				498730AB17D548DB0041B02B /* QuartzCore.framework */,
 				49B83EF217CE74620014B739 /* CoreText.framework */,
 				4987307717D546800041B02B /* iosMath */,
