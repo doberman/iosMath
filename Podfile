@@ -6,15 +6,15 @@ install! 'cocoapods', :deterministic_uuids => false
 
 target 'iosMathExample' do
   project 'iosMath.xcodeproj'
-  pod 'DMiosMath', :path => './'
+  pod 'iosMath', :path => './'
 end
 
 target 'iosMathTests' do
   project 'iosMath.xcodeproj'
-  pod 'DMiosMath', :path => './'
+  pod 'iosMath', :path => './'
 end
 
 target 'MacOSMath' do
   project 'MacOSMath.xcodeproj'
-  pod 'DMiosMath', :path => './'
+  pod 'iosMath', :path => './'
 end
