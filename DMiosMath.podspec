@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "DMiosMath"
-  s.version      = "0.9.5"
+  s.version      = "0.9.6"
   s.summary      = "Math equation rendering for iOS and OS X"
   s.description  = <<-DESC
 iosMath is a library for typesetting math formulas in iOS and OS X using
@@ -8,7 +8,7 @@ CoreText. It renders formulae written in latex in a UILabel equivalent
 class using the same typsetting rules as latex. This enables displaying
 beautifully rendered math equations in iOS/MacOS applications.
                    DESC
-  s.homepage     = "https://github.com/kostub/iosMath"
+  s.homepage     = "https://github.com/doberman/iosMath"
   s.license      = { :type => "MIT", :file => "LICENSE" }
   s.author       = { "Kostub Deshmukh" => "kostub@gmail.com" }
   s.ios.deployment_target = '6.0'
