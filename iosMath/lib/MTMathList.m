@@ -318,6 +318,59 @@ static NSString* typeToText(MTMathAtomType type) {
 
 @end
 
+#pragma mark - MTOrderedPair
+
+@implementation MTOrderedPair
+
+- (instancetype)init
+{
+    // radicals have no nucleus
+    self = [super initWithType:kMTMathAtomOrderedPair value:@""];
+    return self;
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomOrderedPair) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTOrderedPair initWithType:value:] cannot be called. Use [MTOrdreredPair init] instead."
+                                 userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
+    [str appendFormat:@"(%@,%@)", self.leftOperand.stringValue, self.rightOperand.stringValue];
+    //Below line can be uncommented for scaling up in ordered pair
+    // [str appendFormat:@"\\left(%@,%@\\right)", self.leftOperand.stringValue, self.rightOperand.stringValue];
+    
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTOrderedPair* pair = [super copyWithZone:zone];
+    pair.leftOperand = [self.leftOperand copyWithZone:zone];
+    pair.rightOperand = [self.rightOperand copyWithZone:zone];
+    pair.open = [self.open copyWithZone:zone];
+    pair.close = [self.close copyWithZone:zone];
+    return pair;
+    
+}
+
+- (instancetype)finalized
+{
+    MTOrderedPair* newPair = [super finalized];
+    newPair.leftOperand = newPair.leftOperand.finalized;
+    newPair.rightOperand = newPair.rightOperand.finalized;
+    return newPair;
+}
+
+@end
+
+
 #pragma mark - MTRadical
 
 @implementation MTRadical

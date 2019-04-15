@@ -873,6 +873,11 @@ NSString *const MTParseError = @"ParseError";
         } else if ([atom.nucleus isEqualToString:@"\u2212"]) {
             // math minus
             [str appendString:@"-"];
+        } else if (atom.type == kMTMathAtomOrderedPair) {
+            MTOrderedPair* pair = (MTOrderedPair*) atom;
+            [str appendFormat:@"(%@,%@)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
+            //Below line can be uncommented for ordered pair
+            //            [str appendFormat:@"\\left(%@,%@\\right)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
         } else {
             NSString* command = [MTMathAtomFactory latexSymbolNameForAtom:atom];
             if (command) {

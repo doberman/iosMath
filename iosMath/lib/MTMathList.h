@@ -58,7 +58,7 @@ typedef NS_ENUM(NSUInteger, MTMathAtomType)
     kMTMathAtomOverline,
     /// An accented atom - Accent in TeX
     kMTMathAtomAccent,
-    
+    kMTMathAtomOrderedPair,
     // Atoms after this point do not support subscripts or superscripts
     
     /// A left atom - Left & Right in TeX. We don't need two since we track boundaries separately.
@@ -191,6 +191,26 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 @property (nonatomic, nullable) NSString* leftDelimiter;
 /** An optional delimiter for a fraction on the right. */
 @property (nonatomic, nullable) NSString* rightDelimiter;
+
+@end
+
+@interface MTOrderedPair : MTMathAtom
+
+/// Creates an empty orderedPair
+
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
+/// Left operand pair
+@property (nonatomic) MTMathList* leftOperand;
+
+/// Right operand pair
+@property (nonatomic) MTMathList* rightOperand;
+
+/** An optional delimiter for a pair on the left. */
+@property (nonatomic, nullable) NSString* open;
+
+/** An optional delimiter for a pair on the right. */
+@property (nonatomic, nullable) NSString* close;
 
 @end
 
