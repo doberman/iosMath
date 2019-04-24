@@ -70,6 +70,8 @@ static NSString* typeToText(MTMathAtomType type) {
             return @"Color";
         case kMTMathAtomTable:
             return @"Table";
+      case kMTMathAtomOrderedPair:
+            return @""; // TODO: Add correct value
     }
 }
 
