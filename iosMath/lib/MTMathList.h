@@ -243,6 +243,8 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
  */
 @property (nonatomic) BOOL limits;
 
+@property (nonatomic) BOOL isTrigFunction;
+
 @end
 
 /** An inner atom. This denotes an atom which contains a math list inside it. An inner atom

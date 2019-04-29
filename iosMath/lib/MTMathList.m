@@ -459,6 +459,18 @@ static NSString* typeToText(MTMathAtomType type) {
     return op;
 }
 
+// Return YES if string is a trig function, otherwise return NO
+- (BOOL)isTrigFunction {
+  NSString* string = self.stringValue;
+  NSArray *trigFunctions = @[@"sin", @"cos", @"tan", @"sec", @"csc", @"cot", @"arcsin", @"arccos", @"arctan", @"arccsc", @"arcsec", @"arccot", @"sinh", @"cosh", @"tanh", @"csch", @"sech", @"coth"];
+  for (NSString *trigFunction in trigFunctions) {
+    if ([string isEqualToString:trigFunction]) {
+      return YES;
+    }
+  }
+  return NO;
+}
+
 @end
 
 #pragma mark - MTInner
