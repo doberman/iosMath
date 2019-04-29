@@ -839,7 +839,7 @@ NSString *const MTParseError = @"ParseError";
             MTLargeOperator* op = (MTLargeOperator*) atom;
             NSString* command = [MTMathAtomFactory latexSymbolNameForAtom:atom];
             MTLargeOperator* originalOp = (MTLargeOperator*) [MTMathAtomFactory atomForLatexSymbolName:command];
-            if ([command isEqualToString:@"log"]) {
+            if ([command isEqualToString:@"log"] || op.isTrigFunction) {
                 [str appendFormat:@"\\%@", command];
             } else {
                 [str appendFormat:@"\\%@ ", command];
@@ -890,7 +890,7 @@ NSString *const MTParseError = @"ParseError";
         if (atom.superScript) {
             [str appendFormat:@"^{%@}", [self mathListToString:atom.superScript]];
         }
-        
+
         if (atom.subScript) {
             [str appendFormat:@"_{%@}", [self mathListToString:atom.subScript]];
         }
