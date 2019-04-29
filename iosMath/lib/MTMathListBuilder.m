@@ -839,7 +839,9 @@ NSString *const MTParseError = @"ParseError";
             MTLargeOperator* op = (MTLargeOperator*) atom;
             NSString* command = [MTMathAtomFactory latexSymbolNameForAtom:atom];
             MTLargeOperator* originalOp = (MTLargeOperator*) [MTMathAtomFactory atomForLatexSymbolName:command];
-            if ([command isEqualToString:@"log"]) {
+            BOOL flag = [command isEqualToString:@"lim"];
+            NSLog(flag ? @"Yes" : @"No");
+            if ([command isEqualToString:@"log"] || [command isEqualToString:@"lim"]) {
                 [str appendFormat:@"\\%@", command];
             } else {
                 [str appendFormat:@"\\%@ ", command];
