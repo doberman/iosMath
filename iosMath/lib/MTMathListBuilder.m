@@ -952,7 +952,7 @@ NSString *const MTParseError = @"ParseError";
             else {
                 if([[self trignometrySymbols] containsObject: operator.nucleus]) {
                     isTrignometry = true;
-                  [str appendFormat:@"\\%@{}", operator.nucleus];
+                  [str appendFormat:@"\\%@", operator.nucleus];
                 } else {
                     NSArray *trigEquivalents = @[@"sec", @"cos", @"cot", @"sin", @"tan", @"csc"];
                     if ([trigEquivalents containsObject:operator.nucleus]) {
