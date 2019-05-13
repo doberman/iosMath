@@ -4,7 +4,7 @@
 //
 //  Created by Kostub Deshmukh on 8/28/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
@@ -13,9 +13,12 @@
 
 #import "MTMathList.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 FOUNDATION_EXPORT NSString *const MTSymbolMultiplication;
 FOUNDATION_EXPORT NSString *const MTSymbolDivision;
 FOUNDATION_EXPORT NSString *const MTSymbolFractionSlash;
+FOUNDATION_EXPORT NSString *const MTSymbolMixedFractionSlash;
 FOUNDATION_EXPORT NSString *const MTSymbolWhiteSquare;
 FOUNDATION_EXPORT NSString *const MTSymbolBlackSquare;
 FOUNDATION_EXPORT NSString *const MTSymbolLessEqual;
@@ -44,16 +47,20 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
 /** Returns a fraction with a placeholder for the numerator and denominator */
 + (MTFraction*) placeholderFraction;
 
++ (MTFraction *)placeholderMixedNumberFraction;
+
 /** Returns a square root with a placeholder as the radicand. */
 + (MTRadical *)placeholderSquareRoot;
 
 /** Returns a radical with a placeholder as the radicand. */
 + (MTRadical*) placeholderRadical;
 
++ (MTRadical*) placeholderAccent;
+
 #pragma mark -
 
 /** Gets the atom with the right type for the given character. If an atom
- cannot be determined for a given character this returns nil. 
+ cannot be determined for a given character this returns nil.
  This function follows latex conventions for assigning types to the atoms.
  The following characters are not supported and will return nil:
  - Any non-ascii character.
@@ -62,7 +69,7 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
  - Chars with special meaning in latex: ^ _ { } \
  All other characters will have a non-nil atom returned.
  */
-+ (nullable MTMathAtom*) atomForCharacter:(unichar) ch;
++ (MTMathAtom*) atomForCharacter:(unichar) ch;
 
 /** Returns a `MTMathList` with one atom per character in the given string. This function
  does not do any LaTeX conversion or interpretation. It simply uses `atomForCharacter` to
@@ -72,7 +79,7 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
 /** Returns an atom with the right type for a given latex symbol (e.g. theta)
  If the latex symbol is unknown this will return nil. This supports LaTeX aliases as well.
  */
-+ (nullable MTMathAtom*) atomForLatexSymbolName:(NSString*) symbolName;
++ (MTMathAtom*) atomForLatexSymbolName:(NSString*) symbolName;
 
 /** Finds the name of the LaTeX symbol name for the given atom. This function is a reverse
  of the above function. If no latex symbol name corresponds to the atom, then this returns `nil`
@@ -82,7 +89,7 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
  alias.
  @note: This function does not convert MathSpaces to latex command names either.
  */
-+ (nullable NSString*) latexSymbolNameForAtom:(MTMathAtom*) atom;
++ (NSString*) latexSymbolNameForAtom:(MTMathAtom*) atom;
 
 /** Define a latex symbol for rendering. This function allows defining custom symbols that are
  not already present in the default set, or override existing symbols with new meaning.
@@ -101,7 +108,7 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
  such as `grave`, `hat` etc. If the name is not a recognized accent name, this
  returns nil. The `innerList` of the returned `MTAccent` is nil.
  */
-+ (nullable MTAccent*) accentWithName:(NSString*) accentName;
++ (MTAccent*) accentWithName:(NSString*) accentName;
 
 /** Returns the accent name for the given accent. This is the reverse of the above
  function. */
@@ -109,11 +116,11 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
 
 /** Creates a new boundary atom for the given delimiter name. If the delimiter name
  is not recognized it returns nil. A delimiter name can be a single character such
- as '(' or a latex command such as 'uparrow'. 
+ as '(' or a latex command such as 'uparrow'.
  @note In order to distinguish between the delimiter '|' and the delimiter '\|' the delimiter '\|'
  the has been renamed to '||'.
  */
-+(nullable MTMathAtom*) boundaryAtomForDelimiterName:(NSString*) delimiterName;
++(MTMathAtom*) boundaryAtomForDelimiterName:(NSString*) delimiterName;
 
 /** Returns the delimiter name for a boundary atom. This is a reverse of the above function.
  If the atom is not a boundary atom or if the delimiter value is unknown this returns `nil`.
@@ -143,6 +150,9 @@ FOUNDATION_EXPORT NSString *const MTSymbolDegree;
  matrix environments are have builtin delimiters added to the table and hence are returned as inner atoms.
  */
 + (MTMathAtom*) tableWithEnvironment:(nullable NSString*) env rows:(NSArray<NSArray<MTMathList*>*>*) rows error:(NSError**) error;
+
++ (NSMutableDictionary<NSString*, MTMathAtom*>*) supportedLatexSymbols;
+
 @end
 
-
+NS_ASSUME_NONNULL_END

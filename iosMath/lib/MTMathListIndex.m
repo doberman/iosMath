@@ -3,7 +3,7 @@
 //
 //  Created by Kostub Deshmukh on 9/6/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
@@ -13,9 +13,6 @@
 #pragma mark - MTMathListIndex
 
 @interface MTMathListIndex ()
-
-@property (nonatomic, readwrite) NSUInteger atomIndex;
-@property (nonatomic, readwrite) MTMathListSubIndexType subIndexType;
 @property (nonatomic, readwrite, nullable) MTMathListIndex* subIndex;
 
 @end
@@ -100,7 +97,6 @@
     return (self.finalIndex == 0);
 }
 
-
 - (BOOL)isAtSameLevel:(MTMathListIndex *)other
 {
     if (self.subIndexType != other.subIndexType) {
@@ -172,6 +168,78 @@
     hash = hash * prime + self.subIndexType;
     hash = hash * prime + self.subIndex.hash;
     return hash;
+}
+
+// Note this is a deep copy.
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTMathListIndex* newIndex = [[self class] allocWithZone:zone] ;
+    newIndex.atomIndex = self.atomIndex;
+    newIndex.subIndexType = self.subIndexType;
+    newIndex.subIndex = self.subIndex;
+    return newIndex;
+}
+
+#pragma mark Extended Mthods
+
+- (MTMathListIndex*)replaceSubIndex:(MTMathListIndex*)interAtomIndex withSubIndexType:(MTMathListSubIndexType)subIndexType isEndAtom:(BOOL)isAtEnd{
+    if( [self.endIndex isEqualToIndex: interAtomIndex]) {
+        self.endIndex.subIndexType = subIndexType;
+        self.endIndex.isIndexAtLayoutEnd = isAtEnd;
+    }
+    return self;
+}
+
+- (MTMathListIndex*)levelDownToNextLayout{
+    
+    if (self.endIndex.isIndexAtLayoutEnd == true) {
+        // recurse
+        MTMathListIndex* subIndexDown = self.levelDown;
+        if (subIndexDown) {
+            return subIndexDown.levelDownToNextLayout;
+        }
+    } else {
+        return self;
+    }
+    return nil;
+}
+
+- (MTMathListIndex*) endIndex
+{
+    if (self.subIndex.subIndexType == kMTSubIndexTypeNone) {
+        return self;
+    } else {
+        return self.subIndex.endIndex;
+    }
+}
+
+
+- (MTMathListIndex *)previousIndex
+{
+    if (self.subIndexType == kMTSubIndexTypeNone) {
+        if (self.atomIndex > 0) {
+            self.atomIndex -= 1;
+        }
+    } else {
+        MTMathListIndex* prevSubIndex = self.subIndex;
+        if (prevSubIndex) {
+            [prevSubIndex previousIndex];
+            return [MTMathListIndex indexAtLocation:self.atomIndex withSubIndex:prevSubIndex type:self.subIndexType];
+        }
+    }
+    return nil;
+}
+
+- (MTMathListIndex*)getParentIndex {
+    if (self.subIndex.subIndexType == kMTSubIndexTypeNone) {
+        return self;
+    } else {
+        MTMathListIndex* subIndexDown = self.levelDown;
+        if (subIndexDown) {
+            return subIndexDown.getParentIndex;
+        }
+        return self;
+    }
 }
 
 @end

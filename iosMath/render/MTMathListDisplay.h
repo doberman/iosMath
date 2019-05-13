@@ -11,11 +11,7 @@
 
 @import Foundation;
 @import QuartzCore;
-
-// This header file is imported by Foudation.
-//#include <TargetConditionals.h>
-
-#import "MTConfig.h"
+@import UIKit;
 
 #import "MTFont.h"
 #import "MTMathList.h"
@@ -31,9 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGRect) displayBounds;
 
 /// For debugging. Shows the object in quick look in Xcode.
-#if TARGET_OS_IPHONE
 - (id) debugQuickLookObject;
-#endif
 
 /// The distance from the axis to the top of the display
 @property (nonatomic, readonly) CGFloat ascent;
@@ -48,10 +42,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// Whether the display has a subscript/superscript following it.
 @property (nonatomic, readonly) BOOL hasScript;
 /// The text color for this display
-@property (nonatomic, nullable) MTColor *textColor;
+@property (nonatomic, nullable) UIColor* textColor;
 // The local color, if the color was mutated local with the color
 // command
-@property (nonatomic, nullable) MTColor *localTextColor;
+@property (nonatomic, nullable) UIColor *localTextColor;
 
 @end
 
@@ -87,7 +81,8 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
     /// Positioned at a subscript
     kMTLinePositionSubscript,
     /// Positioned at a superscript
-    kMTLinePositionSuperscript
+    kMTLinePositionSuperscript,
+    kMTLinePositionBeforeSubscript
 };
 
 /// Where the line is positioned
@@ -99,12 +94,15 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
 /// regular list this is NSNotFound
 @property (nonatomic, readonly) NSUInteger index;
 
+- (CGFloat)shiftBottom;
 @end
 
 /// Rendering of an MTFraction as an MTDisplay
 @interface MTFractionDisplay : MTDisplay
 
 - (instancetype)init NS_UNAVAILABLE;
+
+- (instancetype)initWithNumerator:(MTMathListDisplay*) numerator denominator:(MTMathListDisplay*) denominator whole:(MTMathListDisplay*) whole position:(CGPoint) position range:(NSRange) range;
 
 /** A display representing the numerator of the fraction. It's position is relative
  to the parent and is not treated as a sub-display.
@@ -115,7 +113,92 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
  */
 @property (nonatomic, readonly) MTMathListDisplay* denominator;
 
+@property (nonatomic, readonly) MTMathListDisplay* whole;
+
+
 @end
+
+/// Rendering of an MTOrderedPair as an MTDisplay
+@interface MTOrderedPairDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+/** A display representing the left parameter of the ordered pair. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+
+@property (nonatomic, readonly) MTMathListDisplay* leftPair;
+
+/** A display representing the right parameter of the ordered pair. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* rightPair;
+
+@property (nonatomic, readonly, nullable) MTDisplay* leftBoundary;
+
+@property (nonatomic, readonly, nullable) MTDisplay* rightBoundary;
+
+@property (nonatomic, readonly, nullable) MTDisplay* seperator;
+
+@end
+
+/// Rendering of an MTBinomialMatrix as an MTDisplay
+@interface MTBinomialMatrixDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+/** Displays representing the position of the 2x2 matrix. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* row0Column0;
+
+@property (nonatomic, readonly) MTMathListDisplay* row0Column1;
+
+@property (nonatomic, readonly) MTMathListDisplay* row1Column0;
+
+@property (nonatomic, readonly) MTMathListDisplay* row1Column1;
+
+@property (nonatomic, readonly, nullable) MTDisplay* leftBoundary;
+
+@property (nonatomic, readonly, nullable) MTDisplay* rightBoundary;
+
+
+@end
+
+/// Rendering of an MTInnerDisplay as an MTDisplay
+@interface MTInnerDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)initWithValue:(MTMathListDisplay*) innerList left:(MTDisplay *)left right:(MTDisplay *)right position:(CGPoint) position range:(NSRange) range;
+
+//- (instancetype)initWithValue:(MTMathListDisplay*) innerList position:(CGPoint) position range:(NSRange) range;
+/** A display representing the inner list for paranthesis. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* innerList;
+@property (nonatomic, readonly, nullable) MTDisplay* left;
+@property (nonatomic, readonly, nullable) MTDisplay* right;
+
+
+@end
+
+/// Rendering of an MTAbsoluteValue as an MTDisplay
+@interface MTAbsoluteValueDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+- (instancetype)initWithValue:(MTMathListDisplay*) absHolder position:(CGPoint) position leftBoundary:(MTDisplay*) leftBoundary rightBoundary:(MTDisplay*)rightBoundary range:(NSRange) range;
+
+/** A display representing the numerator of the fraction. It's position is relative
+ to the parent and is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* absPlaceholder;
+@property (nonatomic, readonly, nullable) MTDisplay* leftBoundary;
+@property (nonatomic, readonly, nullable) MTDisplay* rightBoundary;
+
+@end
+
+
 
 /// Rendering of an MTRadical as an MTDisplay
 @interface MTRadicalDisplay : MTDisplay
@@ -132,6 +215,31 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
 @property (nonatomic, readonly, nullable) MTMathListDisplay* degree;
 
 @end
+
+/// Rendering of an MTExponent as an MTDisplay
+@interface MTExponentDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+/** A display representing the base exponent . It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* exponentBase;
+/** A display representing the superscript of the exponent. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly, nullable) MTMathListDisplay* expSuperscript;
+/** A display representing the subscript of the exponent. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly, nullable) MTMathListDisplay* expSubscript;
+/** A display representing the prefixed subscript of the exponent. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly, nullable) MTMathListDisplay* prefixedSubscript;
+
+@end
+
 
 /// Rendering a glyph as a display
 @interface MTGlyphDisplay : MTDisplay
@@ -153,6 +261,9 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
  to the parent is not treated as a sub-display.
  */
 @property (nonatomic, readonly, nullable) MTMathListDisplay* lowerLimit;
+@property (nonatomic, readonly) MTMathListDisplay *holder;
+@property (nonatomic, readonly, nullable) MTDisplay* leftBoundary;
+@property (nonatomic, readonly, nullable) MTDisplay* rightBoundary;
 
 @end
 
@@ -165,6 +276,8 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
  to the parent is not treated as a sub-display.
  */
 @property (nonatomic, readonly) MTMathListDisplay* inner;
+
+@property (nonatomic, nullable) UIColor *lineColor;
 
 @end
 
@@ -184,4 +297,34 @@ typedef NS_ENUM(unsigned int, MTLinePosition)  {
 
 @end
 
+/// Rendering of an MTImage as an MTDisplay
+@interface MTImageDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+- (instancetype)initWithImage:(UIImage *)imgage range:(NSRange)range;
+
+@property (nonatomic, readonly) UIImage* image;
+
+@end
+
+/// Rendering of an MTUnder as an MTDisplay
+@interface MTUnderDisplay : MTDisplay
+
+- (instancetype)init NS_UNAVAILABLE;
+
+- (instancetype)initWithPrimaryDisplay:(MTMathListDisplay*) primary secondaryDisplay:(MTMathListDisplay*) secondary position:(CGPoint) position range:(NSRange) range;
+
+/** A display representing the primary of the UNDER. It's position is relative
+ to the parent and is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* primary;
+/** A display representing the secondary atom of the Under. It's position is relative
+ to the parent is not treated as a sub-display.
+ */
+@property (nonatomic, readonly) MTMathListDisplay* secondary;
+
+@end
+
 NS_ASSUME_NONNULL_END
+

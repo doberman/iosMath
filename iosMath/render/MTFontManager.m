@@ -9,6 +9,7 @@
 //  MIT license. See the LICENSE file for details.
 //
 
+@import UIKit;
 #import "MTFontManager.h"
 #import "MTFont+Internal.h"
 
@@ -72,6 +73,13 @@ const int kDefaultFontSize = 20;
 - (MTFont *)defaultFont
 {
     return [self latinModernFontWithSize:kDefaultFontSize];
+}
+
+- (MTFont *)systemFontWithSize:(CGFloat)size
+{
+    UIFont *systemFont = [UIFont systemFontOfSize:size];
+    //SanFranciscoText
+    return [self fontWithName:[NSString stringWithFormat:@"%@",systemFont.fontName] size:size];
 }
 
 @end

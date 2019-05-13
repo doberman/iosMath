@@ -4,7 +4,7 @@
 //
 //  Created by Kostub Deshmukh on 8/28/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
@@ -23,10 +23,12 @@ FOUNDATION_EXPORT NSString *const _Nonnull MTParseError;
 /** Contains any error that occurred during parsing. */
 @property (nonatomic, readonly, nullable) NSError* error;
 
+@property (nonatomic,readonly, nullable)NSDictionary *latexCommands;
+
 /** Create a `MTMathListBuilder` for the given string. After instantiating the
-    `MTMathListBuilder, use `build` to build the mathlist. Create a new `MTMathListBuilder`
-    for each string that needs to be parsed. Do not reuse the object.
-    @param str The LaTeX string to be used to build the `MTMathList`
+ `MTMathListBuilder, use `build` to build the mathlist. Create a new `MTMathListBuilder`
+ for each string that needs to be parsed. Do not reuse the object.
+ @param str The LaTeX string to be used to build the `MTMathList`
  */
 - (nonnull instancetype) initWithString:(nonnull NSString*) str NS_DESIGNATED_INITIALIZER;
 - (nonnull instancetype) init NS_UNAVAILABLE;

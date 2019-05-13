@@ -16,10 +16,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// This class does all the LaTeX typesetting logic.
 /// For ADVANCED use only.
+
 @interface MTTypesetter : NSObject
 
 /// Renders a MTMathList as a list of displays.
 + (MTMathListDisplay*) createLineForMathList:(MTMathList*) mathList font:(MTFont*) font style:(MTLineStyle) style;
++ (void)setPadding:(CGFloat)padding;
++ (void)setEditorMode:(BOOL)isHardReturn;
 
 @end
 

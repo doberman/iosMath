@@ -27,7 +27,7 @@
 
 @end
 
-@interface MTMathListDisplay ()
+@interface MTMathListDisplay () <DownShift>
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -59,11 +59,61 @@
 
 @end
 
+@interface MTOrderedPairDisplay ()
+
+- (instancetype)initWithLeftOperand:(MTMathListDisplay*) leftOperand right:(MTMathListDisplay*) rightOperand delimiters:(NSMutableArray*)delimiters position:(CGPoint) position range:(NSRange) range NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic) CGFloat topKern;
+@property (nonatomic) CGFloat lineThickness;
+
+@end
+
+@interface MTBinomialMatrixDisplay ()
+
+- (instancetype)initWithDisplays:(NSMutableArray*) mathlistDisplays rowShiftUp:(CGFloat)shiftUp rowShiftDown:(CGFloat)shiftDown position:(CGPoint) position range:(NSRange) range;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic) CGFloat topKern;
+@property (nonatomic) CGFloat lineThickness;
+@property (nonatomic) CGFloat row1ShiftUp;
+@property (nonatomic) CGFloat row2ShiftDown;
+
+@end
+
+@interface MTAbsoluteValueDisplay ()
+
+- (instancetype)initWithValue:(MTMathListDisplay*) absHolder position:(CGPoint) position leftBoundary:(MTDisplay*) leftBoundary rightBoundary:(MTDisplay*)rightBoundary range:(NSRange) range
+
+NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic) CGFloat topKern;
+@property (nonatomic) CGFloat lineThickness;
+
+@end
+
+
 @interface MTRadicalDisplay ()
 
 - (instancetype)initWitRadicand:(MTMathListDisplay*) radicand glpyh:(MTDisplay*) glyph position:(CGPoint) position range:(NSRange) range NS_DESIGNATED_INITIALIZER;
 
 - (void) setDegree:(MTMathListDisplay *)degree fontMetrics:(MTFontMathTable*) fontMetrics;
+
+@property (nonatomic) CGFloat topKern;
+@property (nonatomic) CGFloat lineThickness;
+
+@end
+
+@interface MTExponentDisplay ()
+
+@property (nonatomic) CGFloat subScriptDown;
+@property (nonatomic) CGFloat superScriptUp;
+
+- (instancetype)initWithExponentDisplays:(NSMutableDictionary*) displays shiftUp:(CGFloat)shiftUp shiftDown:(CGFloat)shiftDown position:(CGPoint) position range:(NSRange) range;
 
 @property (nonatomic) CGFloat topKern;
 @property (nonatomic) CGFloat lineThickness;
@@ -87,7 +137,8 @@
 
 @interface MTLargeOpLimitsDisplay ()
 
-- (instancetype) initWithNucleus:(MTDisplay*) nucleus upperLimit:(MTMathListDisplay*) upperLimit lowerLimit:(MTMathListDisplay*) lowerLimit limitShift:(CGFloat) limitShift extraPadding:(CGFloat) extraPadding NS_DESIGNATED_INITIALIZER;
+- (instancetype) initWithNucleus:(MTDisplay*) nucleus upperLimit:(MTMathListDisplay*) upperLimit lowerLimit:(MTMathListDisplay*) lowerLimit limitShift:(CGFloat) limitShift extraPadding:(CGFloat) extraPadding boundaries:(NSMutableArray*)boundaries
+NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)init NS_UNAVAILABLE;
 
@@ -99,6 +150,7 @@
 @interface MTLineDisplay ()
 
 - (instancetype)initWithInner:(MTMathListDisplay*) inner position:(CGPoint) position range:(NSRange) range NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithInner:(MTMathListDisplay *)inner position:(CGPoint)position range:(NSRange)range lineColor:(UIColor *)lineColor NS_DESIGNATED_INITIALIZER;
 
 // How much the line should be moved up.
 @property (nonatomic) CGFloat lineShiftUp;
@@ -109,5 +161,24 @@
 @interface MTAccentDisplay ()
 
 - (instancetype)initWithAccent:(MTGlyphDisplay*) glyph accentee:(MTMathListDisplay*) accentee range:(NSRange) range NS_DESIGNATED_INITIALIZER;
+
+@end
+
+
+/// Rendering of an MTInnerDisplay as an MTDisplay
+@interface MTInnerDisplay()
+
+- (instancetype)init NS_UNAVAILABLE;
+- (instancetype)initWithValue:(MTMathListDisplay*) innerList left:(MTDisplay *)left right:(MTDisplay *)right position:(CGPoint)position range:(NSRange)range;
+
+@end
+
+@interface MTUnderDisplay ()
+
+- (instancetype)initWithPrimaryDisplay:(MTMathListDisplay*) primary secondaryDisplay:(MTMathListDisplay*) secondary position:(CGPoint) position range:(NSRange) range NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
+
+@property (nonatomic) CGFloat denominatorDown;
 
 @end

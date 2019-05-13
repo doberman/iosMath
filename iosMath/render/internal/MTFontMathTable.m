@@ -52,12 +52,12 @@
         _unitsPerEm = CTFontGetUnitsPerEm(font.ctFont);
         _fontSize = font.fontSize;
         _mathTable = mathTable;
-        if (![@"1.3" isEqualToString:_mathTable[@"version"]]) {
-            // Invalid version
-            @throw [NSException exceptionWithName:NSInternalInconsistencyException
-                                           reason:[NSString stringWithFormat:@"Invalid version of math table plist: %@", _mathTable[@"version"]]
-                                         userInfo:nil];
-        }
+//       if (![@"1.3" isEqualToString:_mathTable[@"version"]]) {
+           // Invalid version
+//           @throw [NSException exceptionWithName:NSInternalInconsistencyException
+//                                          reason:[NSString stringWithFormat:@"Invalid version of math table plist: %@", _mathTable[@"version"]]
+//                                        userInfo:nil];
+//       }
     }
     return self;
 }

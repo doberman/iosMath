@@ -8,15 +8,13 @@
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
-
+@import UIKit;
 @import CoreText;
-
-// Compatibility of iOS and Mac OS.
-#import "MTConfig.h"
 
 #import "MTFont.h"
 #import "MTMathList.h"
 #import "MTMathListDisplay.h"
+#import "MTConfig.h"
 
 /**
  @typedef MTMathUILabelMode
@@ -58,7 +56,20 @@ typedef NS_ENUM(unsigned int, MTTextAlignment) {
  When created it uses `[MTFontManager defaultFont]` as its font. This can be changed using
  the `font` parameter.
  */
-IB_DESIGNABLE @interface MTMathUILabel : MTView
+IB_DESIGNABLE @interface MTMathUILabel : UIView
+
+/** Padding to add to the left of the label. It is prefered
+ to use Auto Layout instead of padding. */
+@property (nonatomic) CGFloat paddingLeft;
+/** Padding to add to the right of the label. It is prefered
+ to use Auto Layout instead of padding. */
+@property (nonatomic) CGFloat paddingRight;
+/** Padding to add to the top of the label. It is prefered
+ to use Auto Layout instead of padding. */
+@property (nonatomic) CGFloat paddingTop;
+/** Padding to add to the bottom of the label. It is prefered
+ to use Auto Layout instead of padding. */
+@property (nonatomic) CGFloat paddingBottom;
 
 /** The `MTMathList` to render. Setting this will remove any
  `latex` that has already been set. If `latex` has been set, this will
@@ -87,8 +98,7 @@ IB_DESIGNABLE @interface MTMathUILabel : MTView
 @property (nonatomic) IBInspectable CGFloat fontSize;
 
 /** This sets the text color of the rendered math formula. The default color is black. */
-@property (nonatomic, nonnull) IBInspectable MTColor* textColor;
-
+@property (nonatomic, nonnull) IBInspectable UIColor* textColor;
 /** The minimum distance from the margin of the view to the rendered math. This value is
  `UIEdgeInsetsZero` by default. This is useful if you need some padding between the math and
  the border/background color. sizeThatFits: will have its returned size increased by these insets.
@@ -104,4 +114,7 @@ IB_DESIGNABLE @interface MTMathUILabel : MTView
 /** The internal display of the MTMathUILabel. This is for advanced use only. */
 @property (nonatomic, readonly, nullable) MTMathListDisplay* displayList;
 
+- (void)screenWidthPadding:(CGFloat)padding;
+- (void)setEditorMode:(BOOL)isHardReturn;
+- (MTMathListDisplay*)getDisplayList:(MTMathList*)mathlist;
 @end
