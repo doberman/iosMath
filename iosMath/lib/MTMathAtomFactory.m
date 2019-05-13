@@ -477,7 +477,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                                                                        @"varepsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B5"],
                                                                        @"zeta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B6"],
                                                                        @"eta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B7"],
-                                                                       @"greektheta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B8"],
+                                                                       @"theta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B8"],
                                                                        @"thetav" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u03D1"],
                                                                        @"iota" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B9"],
                                                                        @"kappa" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BA"],
