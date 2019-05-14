@@ -946,7 +946,7 @@ NSString *const MTParseError = @"ParseError";
             MTLargeOperator* operator = (MTLargeOperator*) atom;
             if([operator.nucleus isEqualToString:@"int"] && !operator.limits) {
                 [str appendFormat:@"\\%@{}", operator.nucleus];
-            } else if([operator.nucleus isEqualToString:@"log"] && !operator.limits) {
+            } else if(([operator.nucleus isEqualToString:@"log"] || [operator.nucleus isEqualToString:@"ln"]) && !operator.limits) {
               [str appendFormat:@"\\%@", operator.nucleus];
             } else if([operator.nucleus isEqualToString:@"lim"]) {
               [str appendFormat:@"\\%@", operator.nucleus];
