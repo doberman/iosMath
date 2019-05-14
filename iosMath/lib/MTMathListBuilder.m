@@ -964,7 +964,9 @@ NSString *const MTParseError = @"ParseError";
                     }
                 }
                 if(operator.holder) {
-                    [str appendFormat:@"(%@)", operator.holder.stringValue];
+                  // TODO: make sure stringValue knows how to render it's own symbols latex so it can be used instead of calling mathListToString recursevely here
+                  // [str appendFormat:@"\\left(%@\\right)", operator.holder.stringValue];
+                  [str appendFormat:@"\\left(%@\\right)", [self mathListToString:operator.holder]];
                 }
                 
                 //            if (operator.subScript) {
