@@ -948,6 +948,8 @@ NSString *const MTParseError = @"ParseError";
                 [str appendFormat:@"\\%@{}", operator.nucleus];
             } else if([operator.nucleus isEqualToString:@"log"] && !operator.limits) {
               [str appendFormat:@"\\%@", operator.nucleus];
+            } else if([operator.nucleus isEqualToString:@"lim"]) {
+              [str appendFormat:@"\\%@", operator.nucleus];
             }
             else {
                 if([[self trignometrySymbols] containsObject: operator.nucleus]) {
