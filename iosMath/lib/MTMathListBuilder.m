@@ -954,14 +954,8 @@ NSString *const MTParseError = @"ParseError";
                     isTrignometry = true;
                   [str appendFormat:@"\\%@", operator.nucleus];
                 } else {
-                    NSArray *trigEquivalents = @[@"sec", @"cos", @"cot", @"sin", @"tan", @"csc"];
-                    if ([trigEquivalents containsObject:operator.nucleus]) {
-                        isTrignometry = true;
-                        [str appendFormat:@"\\%@%@", @"trig",operator.nucleus];
-                    } else {
-                        isTrignometry = false;
-                        [str appendString:operator.nucleus];
-                    }
+                    isTrignometry = false;
+                    [str appendString:operator.nucleus];
                 }
                 if(operator.holder) {
                   // TODO: make sure stringValue knows how to render it's own symbols latex so it can be used instead of calling mathListToString recursevely here
