@@ -4,13 +4,14 @@
 //
 //  Created by Kostub Deshmukh on 8/26/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
 
 @import Foundation;
 @import CoreGraphics;
+@import UIKit;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -44,6 +45,8 @@ typedef NS_ENUM(NSUInteger, MTMathAtomType)
     kMTMathAtomClose,
     /// An fraction e.g 1/2 - generalized fraction noad in TeX
     kMTMathAtomFraction,
+    /// An fraction e.g 1 1/2 - generalized fraction noad in TeX
+    kMTMathAtomMixedFraction,
     /// A radical operator e.g. sqrt(2)
     kMTMathAtomRadical,
     /// Punctuation such as , - Punct in TeX
@@ -58,28 +61,34 @@ typedef NS_ENUM(NSUInteger, MTMathAtomType)
     kMTMathAtomOverline,
     /// An accented atom - Accent in TeX
     kMTMathAtomAccent,
+
     kMTMathAtomOrderedPair,
     // Atoms after this point do not support subscripts or superscripts
-    
+
     /// A left atom - Left & Right in TeX. We don't need two since we track boundaries separately.
     kMTMathAtomBoundary = 101,
-    
+
     // Atoms after this are non-math TeX nodes that are still useful in math mode. They do not have
     // the usual structure.
-    
+
     /// Spacing between math atoms. This denotes both glue and kern for TeX. We do not
     /// distinguish between glue and kern.
     kMTMathAtomSpace = 201,
     /// Denotes style changes during rendering.
     kMTMathAtomStyle,
     kMTMathAtomColor,
-    
+
     // Atoms after this point are not part of TeX and do not have the usual structure.
-    
+
     /// An table atom. This atom does not exist in TeX. It is equivalent to the TeX command
     /// halign which is handled outside of the TeX math rendering engine. We bring it into our
     /// math typesetting to handle matrices and other tables.
     kMTMathAtomTable = 1001,
+    kMTMathAtomBinomialMatrix,
+    kMTMathAtomAbsoluteValue,
+    kMTMathAtomExponentBase,
+    kMTMathAtomImage,
+    kMTMathAtomUnder
 };
 
 /**
@@ -147,6 +156,11 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 /** The font style to be used for the atom. */
 @property (nonatomic) MTFontStyle fontStyle;
 
+@property (nonatomic, nullable) MTMathList* beforeSubScript;
+
+/* A boolean to know an atom is within a layout or not */
+@property (nonatomic) BOOL isChildAtom;
+
 /** Returns true if this atom allows scripts (sub or super). */
 - (bool) scriptsAllowed;
 
@@ -157,6 +171,8 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 /// The index range in the MTMathList this MTMathAtom tracks. This is used by the finalizing and preprocessing steps
 /// which fuse MTMathAtoms to track the position of the current MTMathAtom in the original list.
 @property (nonatomic, readonly) NSRange indexRange;
+
+@property(nonatomic)BOOL isAtLayoutEnd;
 
 /// Fuse the given atom with this one by combining their nucleii.
 - (void) fuse:(MTMathAtom*) atom;
@@ -182,6 +198,35 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 @property (nonatomic) MTMathList* numerator;
 /// Denominator of the fraction
 @property (nonatomic) MTMathList* denominator;
+
+@property (nonatomic) MTMathList* whole;
+
+/**If true, the fraction has a rule (i.e. a line) between the numerator and denominator.
+ The default value is true. */
+@property (nonatomic, readonly) BOOL hasRule;
+
+/** An optional delimiter for a fraction on the left. */
+@property (nonatomic, nullable) NSString* leftDelimiter;
+/** An optional delimiter for a fraction on the right. */
+@property (nonatomic, nullable) NSString* rightDelimiter;
+
+@end
+
+/** An atom of type fraction. This atom has a numerator and denominator. */
+@interface MTMixedFraction : MTMathAtom
+
+/// Creates an empty fraction with a rule.
+- (instancetype)init;
+
+/// Creates an empty fraction with the given value of hasRule.
+- (instancetype)initWithRule:(BOOL) hasRule NS_DESIGNATED_INITIALIZER;
+
+/// Numerator of the fraction
+@property (nonatomic) MTMathList* numerator;
+/// Denominator of the fraction
+@property (nonatomic) MTMathList* denominator;
+/// Whole number of the fraction
+@property (nonatomic) MTMathList* whole;
 
 /**If true, the fraction has a rule (i.e. a line) between the numerator and denominator.
  The default value is true. */
@@ -214,6 +259,46 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 
 @end
 
+@interface MTBinomialMatrix : MTMathAtom
+
+/// Creates an empty matrix
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
+/// Required row and column mathlist for 2x2 matrix
+@property (nonatomic) MTMathList* row0Col0;
+
+@property (nonatomic) MTMathList* row0Col1;
+
+@property (nonatomic) MTMathList* row1Col0;
+
+@property (nonatomic) MTMathList* row1Col1;
+
+/** An optional delimiter for a matrix table  on the left. */
+@property (nonatomic, nullable) NSString* open;
+
+/** An optional delimiter for a matrix table on the right. */
+@property (nonatomic, nullable) NSString* close;
+
+@end
+
+@interface MTAbsoluteValue : MTMathAtom
+
+/// Creates an empty orderedPair
+
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
+/// Left operand pair
+@property (nonatomic) MTMathList* absHolder;
+
+/** An optional delimiter on the left. */
+@property (nonatomic, nullable) NSString* open;
+
+/** An optional delimiter on the right. */
+@property (nonatomic, nullable) NSString* close;
+
+@end
+
+
 /** An atom of type radical (square root). */
 @interface MTRadical : MTMathAtom
 
@@ -229,6 +314,29 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 
 @end
 
+/** An atom of type exponent */
+@interface MTExponent : MTMathAtom
+
+/// Creates an empty exponent
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
+/// Denotes the base
+@property (nonatomic, nullable) MTMathList* exponent;
+
+/// Denotes the superscript of the exponent
+@property (nonatomic, nullable) MTMathList* expSuperScript;
+
+/// Denotes the subscript of the exponent
+@property (nonatomic, nullable) MTMathList* expSubScript;
+
+/// Denotes the prefix subsript of the exponent
+@property (nonatomic, nullable) MTMathList* prefixedSubScript;
+
+@property (nonatomic) BOOL isSuperScriptTypePrime;
+
+@end
+
+
 /** A `MTMathAtom` of type `kMTMathAtomLargeOperator`. */
 @interface MTLargeOperator : MTMathAtom
 
@@ -241,8 +349,10 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
  above and below the operator in display mode.  If limits is false
  then the limits (if present) and displayed like a regular subscript/superscript.
  */
-@property (nonatomic) BOOL limits;
+@property (nonatomic, readonly) BOOL limits;
+@property (nonatomic, nullable) MTMathList* holder;
 
+- (void)setLimits:(BOOL)limits;
 @end
 
 /** An inner atom. This denotes an atom which contains a math list inside it. An inner atom
@@ -281,6 +391,8 @@ typedef NS_ENUM(NSUInteger, MTFontStyle)
 
 /// The inner math list
 @property (nonatomic, nullable) MTMathList* innerList;
+
+@property (nonatomic, nullable) UIColor *lineColor;
 
 @end
 
@@ -425,13 +537,13 @@ typedef NS_ENUM(NSInteger, MTColumnAlignment) {
 @end
 
 /** A representation of a list of math objects.
-
-    This list can be constructed directly or built with
-    the help of the MTMathListBuilder. It is not required that the mathematics represented make sense
-    (i.e. this can represent something like "x 2 = +". This list can be used for display using MTLine
-    or can be a list of tokens to be used by a parser after finalizedMathList is called.
  
-    @note This class is for ADVANCED usage only.
+ This list can be constructed directly or built with
+ the help of the MTMathListBuilder. It is not required that the mathematics represented make sense
+ (i.e. this can represent something like "x 2 = +". This list can be used for display using MTLine
+ or can be a list of tokens to be used by a parser after finalizedMathList is called.
+ 
+ @note This class is for ADVANCED usage only.
  */
 @interface MTMathList : NSObject<NSCopying>
 
@@ -455,7 +567,7 @@ typedef NS_ENUM(NSInteger, MTColumnAlignment) {
  @throws NSInvalidArgumentException if the atom is `nil` */
 - (void) addAtom:(MTMathAtom*) atom;
 
-/** Inserts an atom at the given index. If index is already occupied, the objects at index and beyond are 
+/** Inserts an atom at the given index. If index is already occupied, the objects at index and beyond are
  shifted by adding 1 to their indices to make room.
  
  @param atom The atom to be inserted. This cannot be `nil` and cannot have the type `kMTMathAtomBoundary`.
@@ -473,7 +585,7 @@ typedef NS_ENUM(NSInteger, MTColumnAlignment) {
 
 /** Removes the last atom from the math list. If there are no atoms in the list this does nothing. */
 - (void) removeLastAtom;
-
+- (void) removeAtoms;
 /** Removes the atom at the given index.
  @param index The index at which to remove the atom. Must be less than the number of atoms
  in the list.
@@ -493,6 +605,31 @@ typedef NS_ENUM(NSInteger, MTColumnAlignment) {
 
 /// Makes a deep copy of the list
 - (id)copyWithZone:(nullable NSZone *)zone;
+
+@end
+
+@interface MTImage : MTMathAtom
+
+/// Creates an empty fraction with a rule.
+- (instancetype)init;
+
+/// Creates an empty fraction with the given value of hasRule.
+- (instancetype)initWithRule:(BOOL)hasRule NS_DESIGNATED_INITIALIZER;
+
+@property (nonatomic, nullable) UIImage *image;
+
+@end
+
+/** An atom of type under. This atom has a parent and child below. */
+@interface MTUnder : MTMathAtom
+
+/// Creates an empty UNDER .
+- (instancetype)init;
+
+/// Primary(Parent) of the Under
+@property (nonatomic) MTMathList* primary;
+/// Secondary(Child) of the Under
+@property (nonatomic) MTMathList* secondary;
 
 @end
 

@@ -13,10 +13,10 @@
 
 @interface MTFont ()
 
-@property (nonatomic, assign) CGFontRef defaultCGFont;
-@property (nonatomic, assign) CTFontRef ctFont;
-@property (nonatomic, strong) MTFontMathTable* mathTable;
-@property (nonatomic, strong) NSDictionary* rawMathTable;
+@property (nonatomic) CGFontRef defaultCGFont;
+@property (nonatomic) CTFontRef ctFont;
+@property (nonatomic) MTFontMathTable* mathTable;
+@property (nonatomic) NSDictionary* rawMathTable;
 
 @end
 
@@ -30,17 +30,25 @@
         // In particular it does not have the math italic characters which breaks our variable rendering.
         // So we first load a CGFont from the file and then convert it to a CTFont.
 
+        NSLog(@"Loading font %@", name);
+        // NSString* fontPath = [[NSBundle mainBundle] pathForResource:name ofType:@"otf"];
         NSBundle* bundle = [MTFont fontBundle];
         NSString* fontPath = [bundle pathForResource:name ofType:@"otf"];
         CGDataProviderRef fontDataProvider = CGDataProviderCreateWithFilename(fontPath.UTF8String);
         self.defaultCGFont = CGFontCreateWithDataProvider(fontDataProvider);
-        CFRelease(fontDataProvider);
+        if(self.defaultCGFont != nil){
+            CFRelease(fontDataProvider);
+        }
+        NSLog(@"Num glyphs: %zd", CGFontGetNumberOfGlyphs(self.defaultCGFont));
 
         self.ctFont = CTFontCreateWithGraphicsFont(self.defaultCGFont, size, nil, nil);
 
+        // NSString* mathTablePlist = [[NSBundle mainBundle] pathForResource:name ofType:@"plist"];
         NSString* mathTablePlist = [bundle pathForResource:name ofType:@"plist"];
         NSDictionary* dict = [NSDictionary dictionaryWithContentsOfFile:mathTablePlist];
-        self.rawMathTable = dict;
+        if(dict){
+            self.rawMathTable = dict;
+        }
         self.mathTable = [[MTFontMathTable alloc] initWithFont:self mathTable:_rawMathTable];
     }
     return self;
@@ -93,7 +101,10 @@
 
 - (CGGlyph)getGlyphWithName:(NSString *)glyphName
 {
-    return CGFontGetGlyphWithGlyphName(self.defaultCGFont, (__bridge CFStringRef) glyphName);
+    if(self.defaultCGFont != nil){
+        return CGFontGetGlyphWithGlyphName(self.defaultCGFont, (__bridge CFStringRef) glyphName);
+    }
+    return kCGGlyphMax;
 }
 
 - (CGFloat)fontSize
@@ -103,7 +114,7 @@
 
 - (void)dealloc
 {
-    self.defaultCGFont=nil;
-    self.ctFont=nil;
+    CGFontRelease(self.defaultCGFont);
+    CFRelease(self.ctFont);
 }
 @end

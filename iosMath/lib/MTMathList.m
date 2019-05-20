@@ -4,12 +4,14 @@
 //
 //  Created by Kostub Deshmukh on 8/26/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
 
 #import "MTMathList.h"
+#import "MTMathAtomFactory.h"
+#import <UIKit/UIKit.h>
 
 // Returns true if the current binary operator is not really binary.
 static BOOL isNotBinaryOperator(MTMathAtom* prevNode)
@@ -70,9 +72,14 @@ static NSString* typeToText(MTMathAtomType type) {
             return @"Color";
         case kMTMathAtomTable:
             return @"Table";
-      case kMTMathAtomOrderedPair:
-            return @""; // TODO: Add correct value
+        case kMTMathAtomOrderedPair:
+            return @"OrderedPair";
+        case kMTMathAtomBinomialMatrix:
+            return @"BinomialMatrix";
+        case kMTMathAtomExponentBase:
+            return @"Exponent";
     }
+    return nil;
 }
 
 #pragma mark - MTMathAtom
@@ -94,6 +101,9 @@ static NSString* typeToText(MTMathAtomType type) {
     switch (type) {
         case kMTMathAtomFraction:
             return [[MTFraction alloc] init];
+            
+        case kMTMathAtomMixedFraction:
+            return [[MTMixedFraction alloc] init];
             
         case kMTMathAtomPlaceholder:
             // A placeholder is created with a white square.
@@ -120,10 +130,19 @@ static NSString* typeToText(MTMathAtomType type) {
             
         case kMTMathAtomSpace:
             return [[MTMathSpace alloc] initWithSpace:0];
-        
+            
         case kMTMathAtomColor:
             return [[MTMathColor alloc] init];
+
+        case kMTMathAtomOrderedPair:
+            return [[MTOrderedPair alloc] init];
             
+        case kMTMathAtomBinomialMatrix:
+            return [[MTBinomialMatrix alloc] init];
+        case kMTMathAtomAbsoluteValue:
+            return [[MTAbsoluteValue alloc] init];
+        case kMTMathAtomExponentBase:
+            return [[MTExponent alloc] init];
         default:
             return [[MTMathAtom alloc] initWithType:type value:value];
     }
@@ -155,6 +174,9 @@ static NSString* typeToText(MTMathAtomType type) {
     if (self.subScript) {
         [str appendFormat:@"_{%@}", self.subScript.stringValue];
     }
+    if (self.beforeSubScript) {
+        [str appendFormat:@"_{%@}", self.beforeSubScript.stringValue];
+    }
     return str;
 }
 
@@ -168,6 +190,8 @@ static NSString* typeToText(MTMathAtomType type) {
     atom.superScript = [self.superScript copyWithZone:zone];
     atom.indexRange = self.indexRange;
     atom.fontStyle = self.fontStyle;
+    atom.beforeSubScript = [self.beforeSubScript copyWithZone:zone];
+    atom.isChildAtom = self.isChildAtom;
     return atom;
 }
 
@@ -179,9 +203,9 @@ static NSString* typeToText(MTMathAtomType type) {
 - (void)setSubScript:(MTMathList *)subScript
 {
     if (subScript && !self.scriptsAllowed) {
-        @throw [[NSException alloc] initWithName:@"Error"
-                                          reason:[NSString stringWithFormat:@"Subscripts not allowed for atom of type %@", typeToText(self.type)]
-                                        userInfo:nil];
+               @throw [[NSException alloc] initWithName:@"Error"
+                                                 reason:[NSString stringWithFormat:@"Subscripts not allowed for atom of type %@", typeToText(self.type)]
+                                               userInfo:nil];
     }
     _subScript = subScript;
 }
@@ -189,11 +213,21 @@ static NSString* typeToText(MTMathAtomType type) {
 - (void)setSuperScript:(MTMathList *)superScript
 {
     if (superScript && !self.scriptsAllowed) {
-        @throw [[NSException alloc] initWithName:@"Error"
-                                          reason:[NSString stringWithFormat:@"Superscripts not allowed for atom of type %@", typeToText(self.type)]
-                                        userInfo:nil];
+               @throw [[NSException alloc] initWithName:@"Error"
+                                                 reason:[NSString stringWithFormat:@"Superscripts not allowed for atom of type %@", typeToText(self.type)]
+                                               userInfo:nil];
     }
     _superScript = superScript;
+}
+
+- (void)setBeforeSubScript:(MTMathList *)beforeSubScript
+{
+    if (beforeSubScript && !self.scriptsAllowed) {
+               @throw [[NSException alloc] initWithName:@"Error"
+                                                 reason:[NSString stringWithFormat:@"Subscripts not allowed for atom of type %@", typeToText(self.type)]
+                                               userInfo:nil];
+    }
+    _beforeSubScript = beforeSubScript;
 }
 
 - (NSString *)description
@@ -217,7 +251,7 @@ static NSString* typeToText(MTMathAtomType type) {
         [_fusedAtoms addObjectsFromArray:atom.fusedAtoms];
     } else {
         [_fusedAtoms addObject:atom];
-    }    
+    }
     
     // Update the nucleus
     NSMutableString* str = self.nucleus.mutableCopy;
@@ -232,6 +266,7 @@ static NSString* typeToText(MTMathAtomType type) {
     // Update super/sub scripts
     self.subScript = atom.subScript;
     self.superScript = atom.superScript;
+    self.beforeSubScript = atom.beforeSubScript;
 }
 
 - (instancetype)finalized
@@ -242,6 +277,9 @@ static NSString* typeToText(MTMathAtomType type) {
     }
     if (newNode.subScript) {
         newNode.subScript = newNode.subScript.finalized;
+    }
+    if (newNode.beforeSubScript) {
+        newNode.beforeSubScript = newNode.beforeSubScript.finalized;
     }
     return newNode;
 }
@@ -280,6 +318,76 @@ static NSString* typeToText(MTMathAtomType type) {
 - (NSString *)stringValue
 {
     NSMutableString* str = [[NSMutableString alloc] init];
+    [str appendString:@"\\frac"];
+    if (self.leftDelimiter || self.rightDelimiter) {
+        [str appendFormat:@"[%@][%@]", self.leftDelimiter, self.rightDelimiter];
+    }
+    
+    [str appendFormat:@"{%@}{%@}", self.numerator.stringValue, self.denominator.stringValue];
+    if (self.superScript) {
+        [str appendFormat:@"^{%@}", self.superScript.stringValue];
+    }
+    if (self.subScript) {
+        [str appendFormat:@"_{%@}", self.subScript.stringValue];
+    }
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTFraction* frac = [super copyWithZone:zone];
+    frac.numerator = [self.numerator copyWithZone:zone];
+    frac.denominator = [self.denominator copyWithZone:zone];
+    frac.whole = [self.whole copyWithZone:zone];
+    frac->_hasRule = self.hasRule;
+    frac.leftDelimiter = [self.leftDelimiter copyWithZone:zone];
+    frac.rightDelimiter = [self.rightDelimiter copyWithZone:zone];
+    return frac;
+}
+
+- (instancetype)finalized
+{
+    MTFraction* newFrac = [super finalized];
+    newFrac.numerator = newFrac.numerator.finalized;
+    newFrac.denominator = newFrac.denominator.finalized;
+    newFrac.whole = newFrac.whole.finalized;
+    return newFrac;
+}
+
+@end
+
+#pragma mark - MTMixedFraction
+
+@implementation MTMixedFraction
+
+- (instancetype)init
+{
+    return [self initWithRule:true];
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomMixedFraction) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTFraction initWithType:value:] cannot be called. Use [MTFraction init] instead."
+                                 userInfo:nil];
+}
+
+- (instancetype)initWithRule:(BOOL)hasRule
+{
+    // fractions have no nucleus
+    self = [super initWithType:kMTMathAtomMixedFraction value:@""];
+    if (self) {
+        _hasRule = hasRule;
+    }
+    return self;
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
     if (self.hasRule) {
         [str appendString:@"\\atop"];
     } else {
@@ -301,9 +409,10 @@ static NSString* typeToText(MTMathAtomType type) {
 
 - (id)copyWithZone:(NSZone *)zone
 {
-    MTFraction* frac = [super copyWithZone:zone];
+    MTMixedFraction* frac = [super copyWithZone:zone];
     frac.numerator = [self.numerator copyWithZone:zone];
     frac.denominator = [self.denominator copyWithZone:zone];
+    frac.whole = [self.whole copyWithZone:zone];
     frac->_hasRule = self.hasRule;
     frac.leftDelimiter = [self.leftDelimiter copyWithZone:zone];
     frac.rightDelimiter = [self.rightDelimiter copyWithZone:zone];
@@ -312,9 +421,10 @@ static NSString* typeToText(MTMathAtomType type) {
 
 - (instancetype)finalized
 {
-    MTFraction* newFrac = [super finalized];
+    MTMixedFraction* newFrac = [super finalized];
     newFrac.numerator = newFrac.numerator.finalized;
     newFrac.denominator = newFrac.denominator.finalized;
+    newFrac.whole = newFrac.whole.finalized;
     return newFrac;
 }
 
@@ -346,7 +456,7 @@ static NSString* typeToText(MTMathAtomType type) {
     NSMutableString* str = [[NSMutableString alloc] init];
     [str appendFormat:@"(%@,%@)", self.leftOperand.stringValue, self.rightOperand.stringValue];
     //Below line can be uncommented for scaling up in ordered pair
-    // [str appendFormat:@"\\left(%@,%@\\right)", self.leftOperand.stringValue, self.rightOperand.stringValue];
+   // [str appendFormat:@"\\left(%@,%@\\right)", self.leftOperand.stringValue, self.rightOperand.stringValue];
     
     return str;
 }
@@ -368,6 +478,112 @@ static NSString* typeToText(MTMathAtomType type) {
     newPair.leftOperand = newPair.leftOperand.finalized;
     newPair.rightOperand = newPair.rightOperand.finalized;
     return newPair;
+}
+
+@end
+
+#pragma mark - MTBinomialMatrix
+
+@implementation MTBinomialMatrix
+
+- (instancetype)init
+{
+    self = [super initWithType:kMTMathAtomBinomialMatrix value:@""];
+    return self;
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomBinomialMatrix) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTMTBinomialMatrix initWithType:value:] cannot be called. Use [MTBinomialMatrix init] instead."
+                                 userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
+    if([self.open isEqualToString:@"["]){
+        [str appendFormat:@"\\bmatrix{%@}{%@}{%@}{%@}", self.row0Col0.stringValue, self.row0Col1.stringValue,self.row1Col0.stringValue,self.row1Col1.stringValue];
+    }
+    else{
+        [str appendFormat:@"\\vmatrix{%@}{%@}{%@}{%@}", self.row0Col0.stringValue,self.row0Col1.stringValue,self.row1Col0.stringValue,self.row1Col1.stringValue];
+    }
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTBinomialMatrix* matrix = [super copyWithZone:zone];
+    matrix.row0Col0 = [self.row0Col0 copyWithZone:zone];
+    matrix.row0Col1 = [self.row0Col1 copyWithZone:zone];
+    matrix.row1Col0 = [self.row1Col0 copyWithZone:zone];
+    matrix.row1Col1 = [self.row1Col1 copyWithZone:zone];
+    
+    matrix.open = [self.open copyWithZone:zone];
+    matrix.close = [self.close copyWithZone:zone];
+    return matrix;
+    
+}
+
+- (instancetype)finalized
+{
+    MTBinomialMatrix* matrix = [super finalized];
+    matrix.row0Col0 = matrix.row0Col0.finalized;
+    matrix.row0Col1 = matrix.row0Col1.finalized;
+    matrix.row1Col0 = matrix.row1Col0.finalized;
+    matrix.row1Col1 = matrix.row1Col1.finalized;
+    
+    return matrix;
+}
+
+@end
+
+#pragma mark - MTAbsoluteValue
+
+@implementation MTAbsoluteValue
+
+- (instancetype)init
+{
+    // radicals have no nucleus
+    self = [super initWithType:kMTMathAtomAbsoluteValue value:@""];
+    return self;
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomAbsoluteValue) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTAbsoluteValue initWithType:value:] cannot be called. Use [MTAbsoluteValue init] instead."
+                                 userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
+    [str appendFormat:@"\\abs{%@}", self.absHolder.stringValue];
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTAbsoluteValue* value = [super copyWithZone:zone];
+    value.absHolder = [self.absHolder copyWithZone:zone];
+    value.open = [self.open copyWithZone:zone];
+    value.close = [self.close copyWithZone:zone];
+    return value;
+    
+}
+
+- (instancetype)finalized
+{
+    MTAbsoluteValue* value = [super finalized];
+    value.absHolder = value.absHolder.finalized;
+    return value;
 }
 
 @end
@@ -401,7 +617,7 @@ static NSString* typeToText(MTMathAtomType type) {
         [str appendFormat:@"[%@]", self.degree.stringValue];
     }
     [str appendFormat:@"{%@}", self.radicand.stringValue];
-
+    
     if (self.superScript) {
         [str appendFormat:@"^{%@}", self.superScript.stringValue];
     }
@@ -429,6 +645,67 @@ static NSString* typeToText(MTMathAtomType type) {
 
 @end
 
+#pragma mark - MTExponent
+
+@implementation MTExponent
+
+- (instancetype)init
+{
+    // radicals have no nucleus
+    self = [super initWithType:kMTMathAtomExponentBase value:@""];
+    return self;
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomExponentBase) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTExponent initWithType:value:] cannot be called. Use [MTExponent init] instead."
+                                 userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [NSMutableString stringWithString:@""];
+    if(self.prefixedSubScript){
+        [str appendFormat:@"{%@}_", self.prefixedSubScript.stringValue];
+    }
+    [str appendFormat:@"{%@}", self.exponent.stringValue];
+    
+    if (self.expSuperScript) {
+        [str appendFormat:@"^{%@}", self.expSuperScript.stringValue];
+    }
+    if(self.expSubScript){
+        [str appendFormat:@"_{%@}", self.expSubScript.stringValue];
+    }
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTExponent* exp = [super copyWithZone:zone];
+    exp.exponent = [self.exponent copyWithZone:zone];
+    exp.expSuperScript = [self.expSuperScript copyWithZone:zone];
+    exp.expSubScript = [self.expSubScript copyWithZone:zone];
+    exp.prefixedSubScript = [self.prefixedSubScript copyWithZone:zone];
+    return exp;
+}
+
+- (instancetype)finalized
+{
+    MTExponent* exp = [super finalized];
+    exp.exponent = exp.exponent.finalized;
+    exp.expSuperScript = exp.expSuperScript.finalized;
+    exp.expSubScript = exp.expSubScript.finalized;
+    exp.prefixedSubScript = exp.prefixedSubScript.finalized;
+    return exp;
+}
+
+@end
+
+
 #pragma mark - MTLargeOperator
 
 @implementation MTLargeOperator
@@ -442,6 +719,9 @@ static NSString* typeToText(MTMathAtomType type) {
     return self;
 }
 
+- (void)setLimits:(BOOL)limits{
+    _limits = limits;
+}
 - (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
 {
     if (type == kMTMathAtomLargeOperator) {
@@ -452,10 +732,38 @@ static NSString* typeToText(MTMathAtomType type) {
                                  userInfo:nil];
 }
 
+- (NSString *)stringValue {
+    NSMutableString* str = [NSMutableString stringWithString:@""];
+    if([self.nucleus isEqualToString:@"int"] && !self.limits) {
+        [str appendFormat:@"\\%@{}", self.nucleus];
+    }
+    else {
+        [str appendString:self.nucleus];
+    }
+    if(self.holder){
+        [str appendFormat:@"(%@)", self.holder.stringValue];
+    }
+    if (self.subScript) {
+        [str appendFormat:@"_{%@}", self.subScript.stringValue];
+    }
+    if (self.superScript) {
+        [str appendFormat:@"^{%@}", self.superScript.stringValue];
+    }
+    return str;
+}
+
 - (id)copyWithZone:(NSZone *)zone
 {
     MTLargeOperator* op = [super copyWithZone:zone];
+    op.holder = [self.holder copyWithZone:zone];
     op->_limits = self.limits;
+    return op;
+}
+
+- (instancetype)finalized
+{
+    MTLargeOperator* op = [super finalized];
+    op.holder = op.holder.finalized;
     return op;
 }
 
@@ -504,13 +812,15 @@ static NSString* typeToText(MTMathAtomType type) {
 
 - (NSString *)stringValue
 {
-    NSMutableString* str = [NSMutableString stringWithString:@"\\inner"];
+    NSMutableString* str = [NSMutableString stringWithString:@"\\left"];
     if (self.leftBoundary) {
-        [str appendFormat:@"[%@]", self.leftBoundary.nucleus];
+        [str appendFormat:@"%@", self.leftBoundary.nucleus];
     }
-    [str appendFormat:@"{%@}", self.innerList.stringValue];
+    if (self.innerList) {
+        [str appendFormat:@"%@", self.innerList.stringValue];
+    }
     if (self.rightBoundary) {
-        [str appendFormat:@"[%@]", self.rightBoundary.nucleus];
+        [str appendFormat:@"\\right%@", self.rightBoundary.nucleus];
     }
     
     if (self.superScript) {
@@ -600,6 +910,7 @@ static NSString* typeToText(MTMathAtomType type) {
 {
     MTUnderLine* op = [super copyWithZone:zone];
     op.innerList = [self.innerList copyWithZone:zone];
+    op.lineColor = self.lineColor;
     return op;
 }
 
@@ -630,6 +941,13 @@ static NSString* typeToText(MTMathAtomType type) {
     @throw [NSException exceptionWithName:@"InvalidMethod"
                                    reason:@"[MTAccent initWithType:value:] cannot be called. Use [MTAccent initWithValue:] instead."
                                  userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
+    [str appendFormat:@"\\%@{%@}", [MTMathAtomFactory accentName:self], self.innerList.stringValue];
+    return str;
 }
 
 - (id)copyWithZone:(NSZone *)zone
@@ -952,6 +1270,12 @@ static NSString* typeToText(MTMathAtomType type) {
     }
 }
 
+- (void)removeAtoms {
+    if (_atoms.count > 0) {
+        [_atoms removeAllObjects];
+    }
+}
+    
 - (void) removeAtomAtIndex:(NSUInteger)index
 {
     [_atoms removeObjectAtIndex:index];
@@ -989,8 +1313,8 @@ static NSString* typeToText(MTMathAtomType type) {
             NSUInteger index = (prevNode == nil) ? 0 : prevNode.indexRange.location + prevNode.indexRange.length;
             newNode.indexRange = NSMakeRange(index, 1);
         }
-
-        switch (newNode.type) {
+        
+   /*     switch (newNode.type) {
             case kMTMathAtomBinaryOperator: {
                 if (isNotBinaryOperator(prevNode)) {
                     newNode.type = kMTMathAtomUnaryOperator;
@@ -1005,25 +1329,26 @@ static NSString* typeToText(MTMathAtomType type) {
                 }
                 break;
                 
-            case kMTMathAtomNumber:
-                // combine numbers together
-                if (prevNode && prevNode.type == kMTMathAtomNumber && !prevNode.subScript && !prevNode.superScript) {
-                    [prevNode fuse:newNode];
-                    // skip the current node, we are done here.
-                    continue;
-                }
-                break;
+//            case kMTMathAtomNumber:
+//                // combine numbers together
+//                if (prevNode && prevNode.type == kMTMathAtomNumber && !prevNode.subScript && !prevNode.superScript && !prevNode.beforeSubScript) {
+//                    [prevNode fuse:newNode];
+//                    // skip the current node, we are done here.
+//                    continue;
+//                }
+//                break;
                 
             default:
                 break;
-        }
+        }*/
+        
         [finalized addAtom:newNode];
         prevNode = newNode;
     }
-    if (prevNode && prevNode.type == kMTMathAtomBinaryOperator) {
-        // it isn't a binary since there is noting after it. Make it a unary
-        prevNode.type = kMTMathAtomUnaryOperator;
-    }
+//    if (prevNode && prevNode.type == kMTMathAtomBinaryOperator) {
+//        // it isn't a binary since there is noting after it. Make it a unary
+//        prevNode.type = kMTMathAtomUnaryOperator;
+//    }
     return finalized;
 }
 
@@ -1038,3 +1363,80 @@ static NSString* typeToText(MTMathAtomType type) {
 }
 
 @end
+
+#pragma mark - MTImage
+
+@implementation MTImage
+
+- (instancetype)init {
+    return [self initWithRule:true];
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value {
+    return [self init];
+}
+
+- (instancetype)initWithRule:(BOOL)hasRule {
+    self = [super initWithType:kMTMathAtomImage value:@""];
+    return self;
+}
+
+- (id)copyWithZone:(NSZone *)zone {
+    MTImage *imageAtom = [super copyWithZone:zone];
+    imageAtom.image = self.image;
+    return imageAtom;
+}
+
+- (instancetype)finalized {
+    MTImage *imageAtom = [super finalized];
+    return imageAtom;
+}
+
+@end
+
+#pragma mark - MTUnder
+
+@implementation MTUnder
+
+- (instancetype)init
+{
+    self = [super initWithType:kMTMathAtomUnder value:@""];
+    return self;
+}
+
+- (instancetype)initWithType:(MTMathAtomType)type value:(NSString *)value
+{
+    if (type == kMTMathAtomUnder) {
+        return [self init];
+    }
+    @throw [NSException exceptionWithName:@"InvalidMethod"
+                                   reason:@"[MTUnder initWithType:value:] cannot be called. Use [MTOrdreredPair init] instead."
+                                 userInfo:nil];
+}
+
+- (NSString *)stringValue
+{
+    NSMutableString* str = [[NSMutableString alloc] init];
+    [str appendString:@"\\undr"];
+    [str appendFormat:@"{%@;%@}", self.primary.stringValue, self.secondary.stringValue];
+    return str;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    MTUnder* under = [super copyWithZone:zone];
+    under.primary = [self.primary copyWithZone:zone];
+    under.secondary = [self.secondary copyWithZone:zone];
+    return under;
+}
+
+- (instancetype)finalized
+{
+    MTUnder* under = [super finalized];
+    under.primary = under.primary.finalized;
+    under.secondary = under.secondary.finalized;
+    return under;
+}
+
+@end
+

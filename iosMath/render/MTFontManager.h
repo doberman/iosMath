@@ -41,4 +41,5 @@
 /** Helper function to return the Latin Modern Math font. */
 - (nonnull MTFont*) latinModernFontWithSize:(CGFloat) size;
 
+- (nonnull MTFont *)systemFontWithSize:(CGFloat)size;
 @end

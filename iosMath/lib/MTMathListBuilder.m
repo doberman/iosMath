@@ -4,7 +4,7 @@
 //
 //  Created by Kostub Deshmukh on 8/28/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
@@ -57,6 +57,7 @@ NSString *const MTParseError = @"ParseError";
         [str getCharacters:_chars range:NSMakeRange(0, str.length)];
         _currentChar = 0;
         _currentFontStyle = kMTFontStyleDefault;
+        _latexCommands = [MTMathAtomFactory supportedLatexSymbols];
     }
     return self;
 }
@@ -87,14 +88,14 @@ NSString *const MTParseError = @"ParseError";
 - (MTMathList *)build
 {
     MTMathList* list = [self buildInternal:false];
-    if ([self hasCharacters] && !_error) {
-        // something went wrong most likely braces mismatched
-        NSString* errorMessage = [NSString stringWithFormat:@"Mismatched braces: %@", [NSString stringWithCharacters:_chars length:_length]];
-        [self setError:MTParseErrorMismatchBraces message:errorMessage];
-    }
-    if (_error) {
-        return nil;
-    }
+    //    if ([self hasCharacters] && !_error) {
+    //        // something went wrong most likely braces mismatched
+    //        NSString* errorMessage = [NSString stringWithFormat:@"Mismatched braces: %@", [NSString stringWithCharacters:_chars length:_length]];
+    //        [self setError:MTParseErrorMismatchBraces message:errorMessage];
+    //    }
+    //    if (_error) {
+    //        return nil;
+    //    }
     return list;
 }
 
@@ -129,31 +130,13 @@ NSString *const MTParseError = @"ParseError";
         }
         
         if (ch == '^') {
-            NSAssert(!oneCharOnly, @"This should have been handled before");
-            
-            if (!prevAtom || prevAtom.superScript || !prevAtom.scriptsAllowed) {
-                // If there is no previous atom, or if it already has a superscript
-                // or if scripts are not allowed for it, then add an empty node.
-                prevAtom = [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@""];
-                [list addAtom:prevAtom];
+            if(atom == nil) {
+                atom = [self buildSuperScriptWithList:list];
             }
-            // this is a superscript for the previous atom
-            // note: if the next char is the stopChar it will be consumed by the ^ and so it doesn't count as stop
-            prevAtom.superScript = [self buildInternal:true];
-            continue;
         } else if (ch == '_') {
-            NSAssert(!oneCharOnly, @"This should have been handled before");
-            
-            if (!prevAtom || prevAtom.subScript || !prevAtom.scriptsAllowed) {
-                // If there is no previous atom, or if it already has a subcript
-                // or if scripts are not allowed for it, then add an empty node.
-                prevAtom = [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@""];
-                [list addAtom:prevAtom];
+            if(atom == nil) {
+                atom = [self buildSubScriptWithList:list];
             }
-            // this is a subscript for the previous atom
-            // note: if the next char is the stopChar it will be consumed by the _ and so it doesn't count as stop
-            prevAtom.subScript = [self buildInternal:true];
-            continue;
         } else if (ch == '{') {
             // this puts us in a recursive routine, and sets oneCharOnly to false and no stop character
             MTMathList* sublist = [self buildInternal:false stopChar:'}'];
@@ -163,54 +146,42 @@ NSString *const MTParseError = @"ParseError";
                 return list;
             }
             continue;
-        } else if (ch == '}') {
-            NSAssert(!oneCharOnly, @"This should have been handled before");
-            NSAssert(stop == 0, @"This should have been handled before");
-            // We encountered a closing brace when there is no stop set, that means there was no
-            // corresponding opening brace.
-            NSString* errorMessage = @"Mismatched braces.";
-            [self setError:MTParseErrorMismatchBraces message:errorMessage];
-            return nil;
-        } else if (ch == '\\') {
+        }
+//        else if (ch == '}') {
+//            NSAssert(!oneCharOnly, @"This should have been handled before");
+//            NSAssert(stop == 0, @"This should have been handled before");
+//            // We encountered a closing brace when there is no stop set, that means there was no
+//            // corresponding opening brace.
+//            NSString* errorMessage = @"Mismatched braces.";
+//            [self setError:MTParseErrorMismatchBraces message:errorMessage];
+//            return nil;
+//        }
+        else if (ch == '\\') {
             // \ means a command
             NSString* command = [self readCommand];
             MTMathList* done = [self stopCommand:command list:list stopChar:stop];
             if (done) {
                 return done;
-            } else if (_error) {
+            }
+            else if (_error) {
                 return nil;
-            }
-            if ([self applyModifier:command atom:prevAtom]) {
-                continue;
-            }
-            MTFontStyle fontStyle = [MTMathAtomFactory fontStyleWithName:command];
-            if (fontStyle != NSNotFound) {
-                BOOL oldSpacesAllowed = _spacesAllowed;
-                // Text has special consideration where it allows spaces without escaping.
-                _spacesAllowed = [command isEqualToString:@"text"];
-                MTFontStyle oldFontStyle = _currentFontStyle;
-                _currentFontStyle = fontStyle;
-                MTMathList* sublist = [self buildInternal:true];
-                // Restore the font style.
-                _currentFontStyle = oldFontStyle;
-                _spacesAllowed = oldSpacesAllowed;
-
-                prevAtom = [sublist.atoms lastObject];
-                [list append:sublist];
-                if (oneCharOnly) {
-                    return list;
-                }
-                continue;
             }
             atom = [self atomForCommand:command];
-            if (atom == nil) {
-                // this was an unknown command,
-                // we flag an error and return
-                // (note setError will not set the error if there is already one, so we flag internal error
-                // in the odd case that an _error is not set.
-                [self setError:MTParseErrorInternalError message:@"Internal error"];
-                return nil;
+            /* For Large Operaor with Limits */
+            if (atom.type == kMTMathAtomLargeOperator){
+                [self buildLargeOpWithLimits:atom];
             }
+            else if (atom.type == kMTMathAtomAccent) {
+                [self buildAccent:atom];
+            }
+            //            if (atom == nil) {
+            //                // this was an unknown command,
+            //                // we flag an error and return
+            //                // (note setError will not set the error if there is already one, so we flag internal error
+            //                // in the odd case that an _error is not set.
+            //                [self setError:MTParseErrorInternalError message:@"Internal error"];
+            //                return nil;
+            //            }
         } else if (ch == '&') {
             // used for column separation in tables
             NSAssert(!oneCharOnly, @"This should have been handled before");
@@ -221,9 +192,6 @@ NSString *const MTParseError = @"ParseError";
                 MTMathAtom* table = [self buildTable:nil firstList:list row:NO];
                 return [MTMathList mathListWithAtoms:table, nil];
             }
-        } else if (_spacesAllowed && ch == ' ') {
-            // If spaces are allowed then spaces do not need escaping with a \ before being used.
-            atom = [MTMathAtomFactory atomForLatexSymbolName:@" "];
         } else {
             atom = [MTMathAtomFactory atomForCharacter:ch];
             if (!atom) {
@@ -231,9 +199,10 @@ NSString *const MTParseError = @"ParseError";
                 continue;
             }
         }
-        NSAssert(atom != nil, @"Atom shouldn't be nil");
-        atom.fontStyle = _currentFontStyle;
-        [list addAtom:atom];
+        //NSAssert(atom != nil, @"Atom shouldn't be nil");
+        if (atom != nil) {
+            [list addAtom:atom];
+        }
         prevAtom = atom;
         
         if (oneCharOnly) {
@@ -261,44 +230,16 @@ NSString *const MTParseError = @"ParseError";
     while([self hasCharacters]) {
         unichar ch = [self getNextCharacter];
         if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+            if(_latexCommands[mutable] != nil){
+                [self unlookCharacter];
+                break;
+            }
             [mutable appendString:[NSString stringWithCharacters:&ch length:1]];
         } else {
             // we went too far
             [self unlookCharacter];
             break;
         }
-    }
-    return mutable;
-}
-
-- (NSString*) readColor
-{
-    if (![self expectCharacter:'{']) {
-        // We didn't find an opening brace, so no env found.
-        [self setError:MTParseErrorCharacterNotFound message:@"Missing {"];
-        return nil;
-    }
-    
-    // Ignore spaces and nonascii.
-    [self skipSpaces];
-
-    // a string of all upper and lower case characters.
-    NSMutableString* mutable = [NSMutableString string];
-    while([self hasCharacters]) {
-        unichar ch = [self getNextCharacter];
-        if (ch == '#' || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f') || (ch >= '0' && ch <= '9')) {
-            [mutable appendString:[NSString stringWithCharacters:&ch length:1]];
-        } else {
-            // we went too far
-            [self unlookCharacter];
-            break;
-        }
-    }
-
-    if (![self expectCharacter:'}']) {
-        // We didn't find an closing brace, so invalid format.
-        [self setError:MTParseErrorCharacterNotFound message:@"Missing }"];
-        return nil;
     }
     return mutable;
 }
@@ -420,6 +361,12 @@ NSString *const MTParseError = @"ParseError";
     return boundary;
 }
 
+- (void)makeChildAtom:(NSArray *)atomsArr {
+    for (MTMathAtom* atom in atomsArr) {
+        atom.isChildAtom = true;
+    }
+}
+
 - (MTMathAtom*) atomForCommand:(NSString*) command
 {
     MTMathAtom* atom = [MTMathAtomFactory atomForLatexSymbolName:command];
@@ -436,6 +383,16 @@ NSString *const MTParseError = @"ParseError";
         MTFraction* frac = [MTFraction new];
         frac.numerator = [self buildInternal:true];
         frac.denominator = [self buildInternal:true];
+        [self makeChildAtom: frac.numerator.atoms];
+        [self makeChildAtom: frac.denominator.atoms];
+        return frac;
+    }
+    else if ([command isEqualToString:@"tfrac"]) {
+        // A fraction command has 2 arguments
+        MTMixedFraction* frac = [MTMixedFraction new];
+        frac.numerator = [self buildInternal:true];
+        frac.denominator = [self buildInternal:true];
+        frac.whole = [self buildInternal:true];
         return frac;
     } else if ([command isEqualToString:@"binom"]) {
         // A binom command has 2 arguments
@@ -444,6 +401,8 @@ NSString *const MTParseError = @"ParseError";
         frac.denominator = [self buildInternal:true];
         frac.leftDelimiter = @"(";
         frac.rightDelimiter = @")";
+        [self makeChildAtom: frac.numerator.atoms];
+        [self makeChildAtom: frac.denominator.atoms];
         return frac;
     } else if ([command isEqualToString:@"sqrt"]) {
         // A sqrt command with one argument
@@ -457,8 +416,12 @@ NSString *const MTParseError = @"ParseError";
             [self unlookCharacter];
             rad.radicand = [self buildInternal:true];
         }
+        NSArray * atomsArr = rad.radicand.atoms;
+        for (MTMathAtom* atom in atomsArr) {
+            atom.isChildAtom = true;
+        }
         return rad;
-    } else if ([command isEqualToString:@"left"]) {
+    } else if ([command isEqualToString:@"left"] || [command isEqualToString:@"lCurlyBrace"]) {
         // Save the current inner while a new one gets built.
         MTInner* oldInner = _currentInnerAtom;
         _currentInnerAtom = [MTInner new];
@@ -467,45 +430,102 @@ NSString *const MTParseError = @"ParseError";
             return nil;
         }
         _currentInnerAtom.innerList = [self buildInternal:false];
-        if (!_currentInnerAtom.rightBoundary) {
-            // A right node would have set the right boundary so we must be missing the right node.
-            NSString* errorMessage = @"Missing \\right";
-            [self setError:MTParseErrorMissingRight message:errorMessage];
-            return nil;
-        }
+        //        if (!_currentInnerAtom.rightBoundary) {
+        //            // A right node would have set the right boundary so we must be missing the right node.
+        //            NSString* errorMessage = @"Missing \\right";
+        //            [self setError:MTParseErrorMissingRight message:errorMessage];
+        //            return nil;
+        //        }
         // reinstate the old inner atom.
+        [self makeChildAtom:_currentInnerAtom.innerList.atoms];
         MTInner* newInner = _currentInnerAtom;
         _currentInnerAtom = oldInner;
         return newInner;
+    } else if ([command isEqualToString:@"right"]) {
+        _currentInnerAtom = [MTInner new];
+        _currentInnerAtom.rightBoundary = [self getBoundaryAtom:@"right"];
+        return _currentInnerAtom;
     } else if ([command isEqualToString:@"overline"]) {
         // The overline command has 1 arguments
         MTOverLine* over = [MTOverLine new];
         over.innerList = [self buildInternal:true];
         return over;
-    } else if ([command isEqualToString:@"underline"]) {
-        // The underline command has 1 arguments
-        MTUnderLine* under = [MTUnderLine new];
-        under.innerList = [self buildInternal:true];
-        return under;
-    } else if ([command isEqualToString:@"begin"]) {
+    } else if ([command containsString:@"underline"]) {
+        NSArray* components = [command componentsSeparatedByString:@"underline"];
+        if (components.count > 1) {
+            // The underline command has 1 arguments
+            MTUnderLine* under = [MTUnderLine new];
+            under.innerList = [self buildInternal:true];
+            NSString *color = [components objectAtIndex:1];
+            if ([color isEqualToString:@"Blue"]) {
+                under.lineColor = [UIColor colorWithRed:4/255.0 green:122/255.0 blue:156/255.0 alpha:1.0];
+            } else if ([color isEqualToString:@"Gray"]) {
+                under.lineColor = [UIColor colorWithRed:199/255.0 green:199/255.0 blue:199/255.0 alpha:1.0];
+            } else if ([color isEqualToString:@"Green"]) {
+                under.lineColor = [UIColor colorWithRed:16/255.0 green:114/255.0 blue:42/255.0 alpha:1.0];
+                MTImage *imageAtom = [MTImage new];
+                imageAtom.image = [UIImage imageNamed:@"FR_Correct" inBundle:[self getTDXBundle] compatibleWithTraitCollection:nil];
+                [under.innerList addAtom:imageAtom];
+            } else if ([color isEqualToString:@"Red"]) {
+                under.lineColor = [UIColor colorWithRed:204/255.0 green:78/255.0 blue:76/255.0 alpha:1.0];
+                MTImage *imageAtom = [MTImage new];
+                imageAtom.image = [UIImage imageNamed:@"FR_Incorrect" inBundle:[self getTDXBundle] compatibleWithTraitCollection:nil];
+                [under.innerList addAtom:imageAtom];
+            }
+            return under;
+        } else {
+            // The underline command has 1 arguments
+            MTUnderLine* under = [MTUnderLine new];
+            under.innerList = [self buildInternal:true];
+            return under;
+        }
+    } else if ([command isEqualToString:@"abs"] || [command isEqualToString:@"absl"] || [command isEqualToString:@"absr"]) {
+        MTAbsoluteValue* absValue = [MTAbsoluteValue new];
+        absValue.open = absValue.close = @"|";
+        if( [command isEqualToString:@"absl"]) {
+            absValue.close = nil;
+        } else if ( [command isEqualToString:@"absr"]){
+            absValue.open = nil;
+        }
+        absValue.absHolder = [self buildInternal:true];
+        return absValue;
+    }
+    else if ([command isEqualToString:@"begin"]) {
         NSString* env = [self readEnvironment];
         if (!env) {
             return nil;
         }
         MTMathAtom* table = [self buildTable:env firstList:nil row:NO];
         return table;
-    } else if ([command isEqualToString:@"color"]) {
-        // A color command has 2 arguments
-        MTMathColor* mathColor = [[MTMathColor alloc] init];
-        mathColor.colorString = [self readColor];
-        mathColor.innerList = [self buildInternal:true];
-        return mathColor;
-    } else {
-        NSString* errorMessage = [NSString stringWithFormat:@"Invalid command \\%@", command];
-        [self setError:MTParseErrorInvalidCommand message:errorMessage];
+    } else if ([command isEqualToString:@"bmatrix"] || [command isEqualToString:@"vmatrix"]) {
+        MTBinomialMatrix *matrix = [MTBinomialMatrix new];
+        if([command isEqualToString:@"vmatrix"]){
+            matrix.open = @"|";
+            matrix.close = @"|";
+        }
+        else if([command isEqualToString:@"bmatrix"]){
+            matrix.open = @"[";
+            matrix.close = @"]";
+        }
+        matrix.row0Col0 = [self buildInternal:true];
+        matrix.row0Col1 = [self buildInternal:true];
+        matrix.row1Col0 = [self buildInternal:true];
+        matrix.row1Col1 = [self buildInternal:true];
+        return matrix;
+    }
+    else if ([command isEqualToString:@"undr"]) {
+        MTUnder* under = [MTUnder new];
+        under.primary = [self buildInternal:true];
+        under.secondary = [self buildInternal:true];
+        return under;
+    }
+    else {
+        //        NSString* errorMessage = [NSString stringWithFormat:@"Invalid command \\%@", command];
+        //        [self setError:MTParseErrorInvalidCommand message:errorMessage];
         return nil;
     }
 }
+
 
 - (MTMathList*) stopCommand:(NSString*) command list:(MTMathList*) list stopChar:(unichar) stopChar
 {
@@ -519,8 +539,10 @@ NSString *const MTParseError = @"ParseError";
     }
     if ([command isEqualToString:@"right"]) {
         if (!_currentInnerAtom) {
-            NSString* errorMessage = @"Missing \\left";
-            [self setError:MTParseErrorMissingLeft message:errorMessage];
+            //NSString* errorMessage = @"Missing \\left";
+            //            _currentInnerAtom = [MTInner new];
+            //            _currentInnerAtom.rightBoundary = [self getBoundaryAtom:@"right"];
+            // [self setError:MTParseErrorMissingLeft message:errorMessage];
             return nil;
         }
         _currentInnerAtom.rightBoundary = [self getBoundaryAtom:@"right"];
@@ -529,7 +551,13 @@ NSString *const MTParseError = @"ParseError";
         }
         // return the list read so far.
         return list;
-    } else if ([fractionCommands objectForKey:command]) {
+    } else if ([command isEqualToString:@"rCurlyBrace"]) {
+        if(_currentInnerAtom && _currentInnerAtom.rightBoundary == nil) {
+            _currentInnerAtom.rightBoundary = [MTMathAtom atomWithType:kMTMathAtomBoundary value:@"}"];
+        }
+        return list;
+    }
+    else if ([fractionCommands objectForKey:command]) {
         MTFraction* frac = nil;
         if ([command isEqualToString:@"over"]) {
             frac = [[MTFraction alloc] init];
@@ -675,7 +703,7 @@ NSString *const MTParseError = @"ParseError";
                             @(-3) : @"!",
                             @18 : @"quad",
                             @36 : @"qquad",
-                    };
+                            };
     }
     return spaceToCommands;
 }
@@ -723,14 +751,20 @@ NSString *const MTParseError = @"ParseError";
         } else if ([command isEqualToString:@"||"]) {
             return @"\\|"; // special case for ||
         } else {
-            return [NSString stringWithFormat:@"\\%@", command];
+            return [NSString stringWithFormat:@"%@", command];
         }
     }
     return @"";
 }
 
++ (NSArray *) trignometrySymbols
+{
+    return @[@"cot", @"sec", @"sin", @"arcsin", @"cos", @"tan", @"csc", @"sinh", @"cosh", @"tanh", @"csch", @"sech", @"coth", @"arccos", @"arctan", @"arccsc", @"arcsec", @"arccot"];
+}
+
 + (NSString *)mathListToString:(MTMathList *)ml
 {
+    BOOL isTrignometry = false;
     NSMutableString* str = [NSMutableString string];
     MTFontStyle currentfontStyle = kMTFontStyleDefault;
     for (MTMathAtom* atom in ml.atoms) {
@@ -746,10 +780,17 @@ NSString *const MTParseError = @"ParseError";
             }
             currentfontStyle = atom.fontStyle;
         }
+//        if (atom.beforeSubScript) {
+//            [str appendFormat:@"{%@}_", [self mathListToString:atom.beforeSubScript]];
+//        }
         if (atom.type == kMTMathAtomFraction) {
             MTFraction* frac = (MTFraction*) atom;
             if (frac.hasRule) {
-                [str appendFormat:@"\\frac{%@}{%@}", [self mathListToString:frac.numerator], [self mathListToString:frac.denominator]];
+                if(frac.whole != nil) {
+                    [str appendFormat:@"{%@}\\frac{%@}{%@}", [self mathListToString:frac.whole],[self mathListToString:frac.numerator], [self mathListToString:frac.denominator]];
+                } else {
+                    [str appendFormat:@"\\frac{%@}{%@}", [self mathListToString:frac.numerator], [self mathListToString:frac.denominator]];
+                }
             } else {
                 NSString* command = nil;
                 if (!frac.leftDelimiter && !frac.rightDelimiter) {
@@ -776,16 +817,18 @@ NSString *const MTParseError = @"ParseError";
             MTInner* inner = (MTInner*) atom;
             if (inner.leftBoundary || inner.rightBoundary) {
                 if (inner.leftBoundary) {
-                    [str appendFormat:@"\\left%@ ", [self delimToString:inner.leftBoundary]];
-                } else {
-                    [str appendString:@"\\left. "];
+                    [str appendFormat:@"\\left%@", [self delimToString:inner.leftBoundary]];
                 }
-                [str appendString:[self mathListToString:inner.innerList]];
+                if (inner.innerList != nil)
+                {
+                    [str appendFormat:@"{%@}", [self mathListToString:inner.innerList]];
+                } else {
+                    [str appendString:@"{}"];
+                }
                 if (inner.rightBoundary) {
-                    [str appendFormat:@"\\right%@ ", [self delimToString:inner.rightBoundary]];
-                } else {
-                    [str appendString:@"\\right. "];
+                    [str appendFormat:@"\\right%@", [self delimToString:inner.rightBoundary]];
                 }
+                
             } else {
                 [str appendFormat:@"{%@}", [self mathListToString:inner.innerList]];
             }
@@ -828,29 +871,22 @@ NSString *const MTParseError = @"ParseError";
             [str appendString:@"\\overline"];
             MTOverLine* over = (MTOverLine*) atom;
             [str appendFormat:@"{%@}", [self mathListToString:over.innerList]];
-        } else if (atom.type == kMTMathAtomUnderline) {
+        } else if (atom.type == kMTMathAtomBinomialMatrix) {
+            MTBinomialMatrix *matrix = (MTBinomialMatrix *)atom;
+            if([matrix.open isEqualToString:@"["]){
+                [str appendFormat:@"\\bmatrix{%@}{%@}{%@}{%@}", [self mathListToString:matrix.row0Col0],[self mathListToString:matrix.row0Col1],[self mathListToString:matrix.row1Col0],[self mathListToString:matrix.row1Col1]];
+            }
+            else{
+                [str appendFormat:@"\\vmatrix{%@}{%@}{%@}{%@}", [self mathListToString:matrix.row0Col0],[self mathListToString:matrix.row0Col1],[self mathListToString:matrix.row1Col0],[self mathListToString:matrix.row1Col1]];
+            }
+        }
+        else if (atom.type == kMTMathAtomUnderline) {
             [str appendString:@"\\underline"];
             MTUnderLine* under = (MTUnderLine*) atom;
             [str appendFormat:@"{%@}", [self mathListToString:under.innerList]];
         } else if (atom.type == kMTMathAtomAccent) {
             MTAccent* accent = (MTAccent*) atom;
             [str appendFormat:@"\\%@{%@}", [MTMathAtomFactory accentName:accent], [self mathListToString:accent.innerList]];
-        } else if (atom.type == kMTMathAtomLargeOperator) {
-            MTLargeOperator* op = (MTLargeOperator*) atom;
-            NSString* command = [MTMathAtomFactory latexSymbolNameForAtom:atom];
-            MTLargeOperator* originalOp = (MTLargeOperator*) [MTMathAtomFactory atomForLatexSymbolName:command];
-            if ([command isEqualToString:@"log"]) {
-                [str appendFormat:@"\\%@", command];
-            } else {
-                [str appendFormat:@"\\%@ ", command];
-            }
-            if (originalOp.limits != op.limits) {
-                if (op.limits) {
-                    [str appendString:@"\\limits "];
-                } else {
-                    [str appendString:@"\\nolimits "];
-                }
-            }
         } else if (atom.type == kMTMathAtomSpace) {
             MTMathSpace* space = (MTMathSpace*) atom;
             NSDictionary* spaceToCommands = [MTMathListBuilder spaceToCommands];
@@ -864,8 +900,32 @@ NSString *const MTParseError = @"ParseError";
             MTMathStyle* style = (MTMathStyle*) atom;
             NSDictionary* styleToCommands = [MTMathListBuilder styleToCommands];
             NSString* command = styleToCommands[@(style.style)];
-            [str appendFormat:@"\\%@ ", command];
-        } else if (atom.nucleus.length == 0) {
+            [str appendFormat:@"\\%@", command];
+        } else if (atom.type == kMTMathAtomOrderedPair) {
+            MTOrderedPair* pair = (MTOrderedPair*) atom;
+            [str appendFormat:@"(%@,%@)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
+            //Below line can be uncommented for ordered pair
+            //            [str appendFormat:@"\\left(%@,%@\\right)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
+        }
+        else if (atom.type == kMTMathAtomAbsoluteValue) {
+            MTAbsoluteValue* absValue = (MTAbsoluteValue*) atom;
+            [str appendFormat:@"\\abs{%@}", [self mathListToString:absValue.absHolder]];
+        }
+        else if (atom.type == kMTMathAtomExponentBase) {
+            MTExponent* exp = (MTExponent*) atom;
+            if(exp.prefixedSubScript){
+                [str appendFormat:@"%@_", [self mathListToString:exp.prefixedSubScript]];
+            }
+            [str appendFormat:@"%@", [self mathListToString:exp.exponent]];
+          
+            if(exp.expSubScript){
+                [str appendFormat:@"_{%@}", [self mathListToString:exp.expSubScript]];
+            }
+            if (exp.expSuperScript) {
+                [str appendFormat:@"^{%@}", [self mathListToString:exp.expSuperScript]];
+            }
+        }
+        else if (atom.nucleus.length == 0) {
             [str appendString:@"{}"];
         } else if ([atom.nucleus isEqualToString:@"\u2236"]) {
             // math colon
@@ -873,32 +933,170 @@ NSString *const MTParseError = @"ParseError";
         } else if ([atom.nucleus isEqualToString:@"\u2212"]) {
             // math minus
             [str appendString:@"-"];
-        } else if (atom.type == kMTMathAtomOrderedPair) {
-            MTOrderedPair* pair = (MTOrderedPair*) atom;
-            [str appendFormat:@"(%@,%@)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
-            //Below line can be uncommented for ordered pair
-            //            [str appendFormat:@"\\left(%@,%@\\right)", [self mathListToString:pair.leftOperand ], [self mathListToString:pair.rightOperand]];
-        } else {
+        }
+        else if ([atom.nucleus isEqualToString:@"\u2211"]) {
+            // math sum
+            [str appendString:@"\\sum"];
+        }
+        else if ([atom.nucleus isEqualToString:@"\u222b"]) {
+            // math integral
+            [str appendString:@"\\int"];
+        }
+        else if(atom.type == kMTMathAtomLargeOperator){
+            MTLargeOperator* operator = (MTLargeOperator*) atom;
+            if([operator.nucleus isEqualToString:@"int"] && !operator.limits) {
+                [str appendFormat:@"\\%@{}", operator.nucleus];
+            } else if(([operator.nucleus isEqualToString:@"log"] || [operator.nucleus isEqualToString:@"ln"]) && !operator.limits) {
+              [str appendFormat:@"\\%@", operator.nucleus];
+            } else if([operator.nucleus isEqualToString:@"lim"]) {
+              [str appendFormat:@"\\%@", operator.nucleus];
+            }
+            else {
+                if([[self trignometrySymbols] containsObject: operator.nucleus]) {
+                    isTrignometry = true;
+                  [str appendFormat:@"\\%@", operator.nucleus];
+                } else {
+                    isTrignometry = false;
+                    [str appendString:operator.nucleus];
+                }
+                if(operator.holder) {
+                  // TODO: make sure stringValue knows how to render it's own symbols latex so it can be used instead of calling mathListToString recursevely here
+                  // [str appendFormat:@"\\left(%@\\right)", operator.holder.stringValue];
+                  [str appendFormat:@"\\left(%@\\right)", [self mathListToString:operator.holder]];
+                }
+                
+                //            if (operator.subScript) {
+                //                [str appendFormat:@"_{%@}", operator.subScript.stringValue];
+                //            }
+                //            if (operator.superScript) {
+                //                [str appendFormat:@"^{%@}", operator.superScript.stringValue];
+                //            }
+            }
+            
+        }
+        else if (atom.type == kMTMathAtomUnder) {
+            MTUnder* under = (MTUnder*) atom;
+            [str appendFormat:@"\\undr{%@}{%@}", [self mathListToString:under.primary], [self mathListToString:under.secondary]];
+        }
+        else {
             NSString* command = [MTMathAtomFactory latexSymbolNameForAtom:atom];
             if (command) {
-                [str appendFormat:@"\\%@ ", command];
+                [str appendFormat:@"\\%@", command];
             } else {
                 [str appendString:atom.nucleus];
             }
-        }
-
-        if (atom.superScript) {
-            [str appendFormat:@"^{%@}", [self mathListToString:atom.superScript]];
         }
         
         if (atom.subScript) {
             [str appendFormat:@"_{%@}", [self mathListToString:atom.subScript]];
         }
-    }
-    if (currentfontStyle != kMTFontStyleDefault) {
-        [str appendString:@"}"];
+        
+        if (atom.superScript) {
+            [str appendFormat:@"^{%@}", [self mathListToString:atom.superScript]];
+        }
+        
     }
     return [str copy];
+}
+
+#pragma mark - TDX Bundle
+
+- (NSBundle *)getTDXBundle {
+    NSString *mainBundlePath = [[NSBundle mainBundle] resourcePath];
+    NSString *frameworkBundlePath = [mainBundlePath stringByAppendingPathComponent:@"Frameworks/TDXLib.framework/TDXLib.bundle"];
+    NSBundle *frameworkBundle = [NSBundle bundleWithPath:frameworkBundlePath];
+    return frameworkBundle;
+}
+
+#pragma mark Exponents
+
+- (MTExponent*)buildSuperScriptWithList:(MTMathList*)sublist {
+    MTExponent *exponent = [MTExponent new];
+    if(exponent.exponent == nil){
+        exponent.exponent = [MTMathList mathListWithAtoms:[sublist.atoms lastObject], nil];
+        [self makeChildAtom:exponent.exponent.atoms];
+        [sublist removeLastAtom];
+    }
+    exponent.expSuperScript = [self buildInternal:true];
+    [self makeChildAtom:exponent.expSuperScript.atoms];
+    BOOL yes = [self expectCharacter:'_'];
+    if (yes) {
+        exponent.expSubScript = [self buildInternal:true];
+        [self makeChildAtom:exponent.expSubScript.atoms];
+    }
+    return exponent;
+}
+
+- (MTExponent*)buildSubScriptWithList:(MTMathList*)sublist {
+    MTExponent *exponent = [MTExponent new];
+    if(exponent.exponent == nil){
+        exponent.exponent = [MTMathList mathListWithAtoms:[sublist.atoms lastObject], nil];
+        [sublist removeLastAtom];
+        [self makeChildAtom:exponent.exponent.atoms];
+    }
+    exponent.expSubScript = [self buildInternal:true];
+    [self makeChildAtom:exponent.expSubScript.atoms];
+    BOOL isBeforeSubscript = [self expectCharacter:'_'];
+    if (isBeforeSubscript) {
+        exponent.prefixedSubScript = [MTMathList mathListWithAtomsArray:exponent.exponent.atoms];
+        [exponent.exponent removeAtoms];
+        [self makeChildAtom:exponent.prefixedSubScript.atoms];
+        exponent.exponent = nil;
+        exponent.exponent = [MTMathList mathListWithAtomsArray:exponent.expSubScript.atoms];
+        [exponent.expSubScript removeAtoms];
+        [self makeChildAtom:exponent.exponent.atoms];
+        exponent.expSubScript = nil;
+        exponent.expSubScript = [self buildInternal:true];
+        [self makeChildAtom:exponent.expSubScript.atoms];
+    }
+    BOOL isSuperScript = [self expectCharacter:'^'];
+    if (isSuperScript) {
+        exponent.expSuperScript = [self buildInternal:true];
+        [self makeChildAtom:exponent.expSuperScript.atoms];
+    }
+    return exponent;
+}
+#pragma mark Integral and Summation with Limits
+
+- (void)buildLargeOpWithLimits:(MTMathAtom*)atom {
+    BOOL yesUnderscore = [self expectCharacter:'_'];
+    NSArray *trigEquivalents = @[@"sin", @"cos", @"tan", @"csc", @"sec", @"cot"];
+    if (yesUnderscore) {
+        MTLargeOperator *largeOp = (MTLargeOperator*)atom;
+        [largeOp setLimits:true];
+        unichar ch1 = [self getNextCharacter];
+        if (ch1 == '{') {
+            MTMathList* sublist = [self buildInternal:false stopChar:'}'];
+            largeOp.subScript = sublist;
+        }
+        BOOL yesSuperscript = [self expectCharacter:'^'];
+        if (yesSuperscript) {
+            unichar ch2 = [self getNextCharacter];
+            if (ch2 == '{') {
+                MTMathList* sublist = [self buildInternal:false stopChar:'}'];
+                largeOp.superScript = sublist;
+                [self makeChildAtom: sublist.atoms];
+            }
+        }
+    } else if ([[MTMathListBuilder trignometrySymbols] containsObject: atom.nucleus] || [trigEquivalents containsObject:atom.nucleus]) {
+        MTLargeOperator *trigOp = (MTLargeOperator*)atom;
+        MTMathList* sublist = [self buildInternal:false stopChar:')'];
+        [sublist removeAtomAtIndex:0];
+        trigOp.holder = sublist;
+        [self makeChildAtom:sublist.atoms];
+        atom.isChildAtom = true;
+    }
+}
+
+- (void)buildAccent:(MTMathAtom*)atom {
+    if([atom.nucleus isEqualToString:@"\u0307"]) {
+        unichar ch = [self getNextCharacter];
+        if (ch == '{') {
+            MTMathList* sublist = [self buildInternal:false stopChar:'}'];
+            MTAccent *accent = (MTAccent*)atom;
+            accent.innerList = sublist;
+        }
+    }
 }
 
 @end

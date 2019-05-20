@@ -4,7 +4,7 @@
 //
 //  Created by Kostub Deshmukh on 8/28/13.
 //  Copyright (C) 2013 MathChat
-//   
+//
 //  This software may be modified and distributed under the terms of the
 //  MIT license. See the LICENSE file for details.
 //
@@ -15,6 +15,7 @@
 NSString *const MTSymbolMultiplication = @"\u00D7";
 NSString *const MTSymbolDivision = @"\u00F7";
 NSString *const MTSymbolFractionSlash = @"\u2044";
+NSString *const MTSymbolMixedFractionSlash = @"\u2044";
 NSString *const MTSymbolWhiteSquare = @"\u25A1";
 NSString *const MTSymbolBlackSquare = @"\u25A0";
 NSString *const MTSymbolLessEqual = @"\u2264";
@@ -25,6 +26,22 @@ NSString *const MTSymbolCubeRoot = @"\u221B";
 NSString *const MTSymbolInfinity = @"\u221E"; // \infty
 NSString *const MTSymbolAngle = @"\u2220"; // \angle
 NSString *const MTSymbolDegree = @"\u00B0"; // \circ
+
+@interface NSDictionary (caseINsensitive)
+-(id) objectForCaseInsensitiveKey:(id)aKey;
+@end
+
+@implementation NSDictionary (caseINsensitive)
+
+-(id) objectForCaseInsensitiveKey:(id)aKey {
+    for (NSString *key in self.allKeys) {
+        if ([key compare:aKey options:NSCaseInsensitiveSearch] == NSOrderedSame) {
+            return [self objectForKey:key];
+        }
+    }
+    return  nil;
+}
+@end
 
 @implementation MTMathAtomFactory
 
@@ -53,6 +70,18 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return frac;
 }
 
++ (MTFraction *)placeholderMixedNumberFraction
+{
+    MTFraction *frac = [MTFraction new];
+    frac.numerator = [MTMathList new];
+    [frac.numerator addAtom:[self placeholder]];
+    frac.denominator = [MTMathList new];
+    [frac.denominator addAtom:[self placeholder]];
+    frac.whole = [MTMathList new];
+    [frac.whole addAtom:[self placeholder]];
+    return frac;
+}
+
 + (MTRadical*) placeholderRadical
 {
     MTRadical* rad = [MTRadical new];
@@ -63,6 +92,16 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return rad;
 }
 
++ (MTRadical*) placeholderAccent
+{
+    MTAccent* acc = [MTAccent new];
+    acc.innerList = [MTMathList new];
+    
+    [acc.innerList addAtom:self.placeholder];
+    
+    return acc;
+}
+
 + (MTMathAtom *)placeholderSquareRoot
 {
     MTRadical *rad = [MTRadical new];
@@ -71,21 +110,23 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return rad;
 }
 
+
+
 + (MTLargeOperator *)operatorWithName:(NSString *)name limits:(bool) limits
 {
     return [[MTLargeOperator alloc] initWithValue:name limits:limits];
 }
 
-+ (nullable MTMathAtom *)atomForCharacter:(unichar)ch
++ (MTMathAtom *)atomForCharacter:(unichar)ch
 {
     NSString *chStr = [NSString stringWithCharacters:&ch length:1];
     if (ch > 0x0410 && ch < 0x044F){
         // show basic cyrillic alphabet. Latin Modern Math font is not good for cyrillic symbols
         return [MTMathAtom atomWithType:kMTMathAtomOrdinary value:chStr];
-    } else if (ch < 0x21 || ch > 0x7E) {
-        // skip non ascii characters and spaces
-        return nil;
-    } else if (ch == '$' || ch == '%' || ch == '#' || ch == '&' || ch == '~' || ch == '\'') {
+    // } else if (ch < 0x21 || ch > 0x7E) {
+    //     // skip non ascii characters and spaces
+    //     return nil;
+    } else if (ch == '%' || ch == '#' || ch == '&' || ch == '~' || ch == '\'') {
         // These are latex control characters that have special meanings. We don't support them.
         return nil;
     } else if (ch == '^' || ch == '_' || ch == '{' || ch == '}' || ch == '\\') {
@@ -105,19 +146,27 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     } else if (ch == '-') {
         // Use the math minus sign
         return [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2212"];
-    } else if (ch == '+' || ch == '*') {
+    } else if (ch == '+') {
         return [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:chStr];
-    } else if (ch == '.' || (ch >= '0' && ch <= '9')) {
+    } else if (ch == '*') {
+        return [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2022"];
+    }
+    else if (ch == '.' || (ch >= '0' && ch <= '9')) {
         return [MTMathAtom atomWithType:kMTMathAtomNumber value:chStr];
     } else if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
         return [MTMathAtom atomWithType:kMTMathAtomVariable value:chStr];
-    } else if (ch == '"' || ch == '/' || ch == '@' || ch == '`' || ch == '|') {
+    } else if (ch == '"' || ch == '/' || ch == '@' || ch == '`' || ch == '|' || ch == '$') {
         // just an ordinary character. The following are allowed ordinary chars
         // | / ` @ "
         return [MTMathAtom atomWithType:kMTMathAtomOrdinary value:chStr];
     } else {
-        NSAssert(false, @"Unknown ascii character %@. Should have been accounted for.", @(ch));
-        return nil;
+        //        NSAssert(false, @"Unknown ascii character %@. Should have been accounted for.", @(ch));
+        //        return nil;
+        if ([chStr isEqualToString:MTSymbolWhiteSquare] || [chStr isEqualToString:MTSymbolBlackSquare]){
+            return [MTMathAtom atomWithType:kMTMathAtomPlaceholder value:nil];
+        }
+        return [MTMathAtom atomWithType:kMTMathAtomOrdinary value:chStr];
+        
     }
 }
 
@@ -137,7 +186,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return list;
 }
 
-+ (nullable MTMathAtom *)atomForLatexSymbolName:(NSString *)symbolName
++ (MTMathAtom *)atomForLatexSymbolName:(NSString *)symbolName
 {
     NSParameterAssert(symbolName);
     NSDictionary* aliases = [MTMathAtomFactory aliases];
@@ -149,7 +198,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     }
     
     NSDictionary* commands = [self supportedLatexSymbols];
-    MTMathAtom* atom = commands[symbolName];
+    MTMathAtom *atom = [commands objectForCaseInsensitiveKey:symbolName];
     if (atom) {
         // Return a copy of the atom since atoms are mutable.
         return [atom copy];
@@ -157,7 +206,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return nil;
 }
 
-+ (nullable NSString*) latexSymbolNameForAtom:(MTMathAtom*) atom
++ (NSString*) latexSymbolNameForAtom:(MTMathAtom*) atom
 {
     if (atom.nucleus.length == 0) {
         return nil;
@@ -184,7 +233,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return commands.allKeys;
 }
 
-+ (nullable MTAccent*) accentWithName:(NSString*) accentName
++ (MTAccent*) accentWithName:(NSString*) accentName
 {
     NSDictionary<NSString*, NSString*> *accents = [MTMathAtomFactory accents];
     NSString* accentValue = accents[accentName];
@@ -201,7 +250,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return dict[accent.nucleus];
 }
 
-+ (nullable MTMathAtom *)boundaryAtomForDelimiterName:(NSString *)delimName
++ (MTMathAtom *)boundaryAtomForDelimiterName:(NSString *)delimName
 {
     NSDictionary<NSString*, NSString*>* delims = [MTMathAtomFactory delimiters];
     NSString* delimValue = delims[delimName];
@@ -279,7 +328,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
     return [self fractionWithNumerator:num denominator:denom];
 }
 
-+ (nullable MTMathAtom *)tableWithEnvironment:(NSString *)env rows:(NSArray<NSArray<MTMathList *> *> *)rows error:(NSError * _Nullable __autoreleasing *)error
++ (MTMathAtom *)tableWithEnvironment:(NSString *)env rows:(NSArray<NSArray<MTMathList *> *> *)rows error:(NSError * _Nullable __autoreleasing *)error
 {
     MTMathTable* table = [[MTMathTable alloc] initWithEnvironment:env];
     for (int i = 0; i < rows.count; i++) {
@@ -342,7 +391,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
         MTMathAtom* spacer = [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@""];
         for (int i = 0; i < table.cells.count; i++) {
             NSArray<MTMathList*>* row = table.cells[i];
-            if (row.count > 1) {
+            if (row.count >= 1) {
                 [row[1] insertAtom:spacer atIndex:0];
             }
         }
@@ -413,279 +462,312 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
 }
 
 + (NSMutableDictionary<NSString*, MTMathAtom*>*) supportedLatexSymbols
-{
-    static NSMutableDictionary<NSString*, MTMathAtom*>* commands = nil;
-    if (!commands) {
-        commands = [NSMutableDictionary dictionaryWithDictionary:@{
-                     @"square" : [MTMathAtomFactory placeholder],
-                     
-                     // Greek characters
-                     @"alpha" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B1"],
-                     @"beta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B2"],
-                     @"gamma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B3"],
-                     @"delta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B4"],
-                     @"varepsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B5"],
-                     @"zeta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B6"],
-                     @"eta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B7"],
-                     @"theta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B8"],
-                     @"iota" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B9"],
-                     @"kappa" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BA"],
-                     @"lambda" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BB"],
-                     @"mu" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BC"],
-                     @"nu" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BD"],
-                     @"xi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BE"],
-                     @"omicron" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BF"],
-                     @"pi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C0"],
-                     @"rho" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C1"],
-                     @"varsigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C2"],
-                     @"sigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C3"],
-                     @"tau" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C4"],
-                     @"upsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C5"],
-                     @"varphi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C6"],
-                     @"chi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C7"],
-                     @"psi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C8"],
-                     @"omega" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C9"],
-
-                     @"vartheta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03D1"],
-                     @"phi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03D5"],
-                     @"varpi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03D6"],
-                     @"varkappa" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03F0"],
-                     @"varrho" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03F1"],
-                     @"epsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03F5"],
-
-                     // Capital greek characters
-                     @"Gamma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0393"],
-                     @"Delta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0394"],
-                     @"Theta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0398"],
-                     @"Lambda" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u039B"],
-                     @"Xi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u039E"],
-                     @"Pi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A0"],
-                     @"Sigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A3"],
-                     @"Upsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A5"],
-                     @"Phi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A6"],
-                     @"Psi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A8"],
-                     @"Omega" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A9"],
-                     
-                     // Open
-                     @"lceil" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u2308"],
-                     @"lfloor" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u230A"],
-                     @"langle" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u27E8"],
-                     @"lgroup" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u27EE"],
-                     
-                     // Close
-                     @"rceil" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u2309"],
-                     @"rfloor" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u230B"],
-                     @"rangle" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u27E9"],
-                     @"rgroup" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u27EF"],
-                     
-                     // Arrows
-                     @"leftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2190"],
-                     @"uparrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2191"],
-                     @"rightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2192"],
-                     @"downarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2193"],
-                     @"leftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2194"],
-                     @"updownarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2195"],
-                     @"nwarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2196"],
-                     @"nearrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2197"],
-                     @"searrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2198"],
-                     @"swarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2199"],
-                     @"mapsto" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21A6"],
-                     @"Leftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D0"],
-                     @"Uparrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D1"],
-                     @"Rightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D2"],
-                     @"Downarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D3"],
-                     @"Leftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D4"],
-                     @"Updownarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D5"],
-                     @"longleftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F5"],
-                     @"longrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F6"],
-                     @"longleftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F7"],
-                     @"Longleftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F8"],
-                     @"Longrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F9"],
-                     @"Longleftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27FA"],
-                     
-                     
-                     // Relations
-                     @"leq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolLessEqual],
-                     @"geq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolGreaterEqual],
-                     @"neq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolNotEqual],
-                     @"in" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2208"],
-                     @"notin" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2209"],
-                     @"ni" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u220B"],
-                     @"propto" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u221D"],
-                     @"mid" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2223"],
-                     @"parallel" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2225"],
-                     @"sim" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u223C"],
-                     @"simeq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2243"],
-                     @"cong" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2245"],
-                     @"approx" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2248"],
-                     @"asymp" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u224D"],
-                     @"doteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2250"],
-                     @"equiv" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2261"],
-                     @"gg" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u226A"],
-                     @"ll" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u226B"],
-                     @"prec" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u227A"],
-                     @"succ" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u227B"],
-                     @"subset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2282"],
-                     @"supset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2283"],
-                     @"subseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2286"],
-                     @"supseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2287"],
-                     @"sqsubset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u228F"],
-                     @"sqsupset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2290"],
-                     @"sqsubseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2291"],
-                     @"sqsupseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2292"],
-                     @"models" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u22A7"],
-                     @"perp" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27C2"],
-                     
-                     // operators
-                     @"times" : [MTMathAtomFactory times],
-                     @"div"   : [MTMathAtomFactory divide],
-                     @"pm"    : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u00B1"],
-                     @"dagger" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2020"],
-                     @"ddagger" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2021"],
-                     @"mp"    : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2213"],
-                     @"setminus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2216"],
-                     @"ast"   : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2217"],
-                     @"circ"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2218"],
-                     @"bullet" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2219"],
-                     @"wedge" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2227"],
-                     @"vee" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2228"],
-                     @"cap" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2229"],
-                     @"cup" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u222A"],
-                     @"wr" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2240"],
-                     @"uplus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u228E"],
-                     @"sqcap" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2293"],
-                     @"sqcup" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2294"],
-                     @"oplus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2295"],
-                     @"ominus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2296"],
-                     @"otimes" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2297"],
-                     @"oslash" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2298"],
-                     @"odot" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2299"],
-                     @"star"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u22C6"],
-                     @"cdot"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u22C5"],
-                     @"amalg" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2A3F"],
-                     
-                     // No limit operators
-                     @"log" : [MTMathAtomFactory operatorWithName:@"log" limits:NO],
-                     @"lg" : [MTMathAtomFactory operatorWithName:@"lg" limits:NO],
-                     @"ln" : [MTMathAtomFactory operatorWithName:@"ln" limits:NO],
-                     @"sin" : [MTMathAtomFactory operatorWithName:@"sin" limits:NO],
-                     @"arcsin" : [MTMathAtomFactory operatorWithName:@"arcsin" limits:NO],
-                     @"sinh" : [MTMathAtomFactory operatorWithName:@"sinh" limits:NO],
-                     @"cos" : [MTMathAtomFactory operatorWithName:@"cos" limits:NO],
-                     @"arccos" : [MTMathAtomFactory operatorWithName:@"arccos" limits:NO],
-                     @"cosh" : [MTMathAtomFactory operatorWithName:@"cosh" limits:NO],
-                     @"tan" : [MTMathAtomFactory operatorWithName:@"tan" limits:NO],
-                     @"arctan" : [MTMathAtomFactory operatorWithName:@"arctan" limits:NO],
-                     @"tanh" : [MTMathAtomFactory operatorWithName:@"tanh" limits:NO],
-                     @"cot" : [MTMathAtomFactory operatorWithName:@"cot" limits:NO],
-                     @"arccot" : [MTMathAtomFactory operatorWithName:@"arccot" limits:NO],
-                     @"coth" : [MTMathAtomFactory operatorWithName:@"coth" limits:NO],
-                     @"sec" : [MTMathAtomFactory operatorWithName:@"sec" limits:NO],
-                     @"arcsec" : [MTMathAtomFactory operatorWithName:@"arcsec" limits:NO],
-                     @"sech" : [MTMathAtomFactory operatorWithName:@"sech" limits:NO],
-                     @"csc" : [MTMathAtomFactory operatorWithName:@"csc" limits:NO],
-                     @"arccsc" : [MTMathAtomFactory operatorWithName:@"arccsc" limits:NO],
-                     @"csch" : [MTMathAtomFactory operatorWithName:@"csch" limits:NO],
-                     @"arg" : [MTMathAtomFactory operatorWithName:@"arg" limits:NO],
-                     @"ker" : [MTMathAtomFactory operatorWithName:@"ker" limits:NO],
-                     @"dim" : [MTMathAtomFactory operatorWithName:@"dim" limits:NO],
-                     @"hom" : [MTMathAtomFactory operatorWithName:@"hom" limits:NO],
-                     @"exp" : [MTMathAtomFactory operatorWithName:@"exp" limits:NO],
-                     @"deg" : [MTMathAtomFactory operatorWithName:@"deg" limits:NO],
-                     
-                     // Limit operators
-                     @"lim" : [MTMathAtomFactory operatorWithName:@"lim" limits:YES],
-                     @"limsup" : [MTMathAtomFactory operatorWithName:@"lim sup" limits:YES],
-                     @"liminf" : [MTMathAtomFactory operatorWithName:@"lim inf" limits:YES],
-                     @"max" : [MTMathAtomFactory operatorWithName:@"max" limits:YES],
-                     @"min" : [MTMathAtomFactory operatorWithName:@"min" limits:YES],
-                     @"sup" : [MTMathAtomFactory operatorWithName:@"sup" limits:YES],
-                     @"inf" : [MTMathAtomFactory operatorWithName:@"inf" limits:YES],
-                     @"det" : [MTMathAtomFactory operatorWithName:@"det" limits:YES],
-                     @"Pr" : [MTMathAtomFactory operatorWithName:@"Pr" limits:YES],
-                     @"gcd" : [MTMathAtomFactory operatorWithName:@"gcd" limits:YES],
-                     
-                     // Large operators
-                     @"prod" : [MTMathAtomFactory operatorWithName:@"\u220F" limits:YES],
-                     @"coprod" : [MTMathAtomFactory operatorWithName:@"\u2210" limits:YES],
-                     @"sum" : [MTMathAtomFactory operatorWithName:@"\u2211" limits:YES],
-                     @"int" : [MTMathAtomFactory operatorWithName:@"\u222B" limits:NO],
-                     @"oint" : [MTMathAtomFactory operatorWithName:@"\u222E" limits:NO],
-                     @"bigwedge" : [MTMathAtomFactory operatorWithName:@"\u22C0" limits:YES],
-                     @"bigvee" : [MTMathAtomFactory operatorWithName:@"\u22C1" limits:YES],
-                     @"bigcap" : [MTMathAtomFactory operatorWithName:@"\u22C2" limits:YES],
-                     @"bigcup" : [MTMathAtomFactory operatorWithName:@"\u22C3" limits:YES],
-                     @"bigodot" : [MTMathAtomFactory operatorWithName:@"\u2A00" limits:YES],
-                     @"bigoplus" : [MTMathAtomFactory operatorWithName:@"\u2A01" limits:YES],
-                     @"bigotimes" : [MTMathAtomFactory operatorWithName:@"\u2A02" limits:YES],
-                     @"biguplus" : [MTMathAtomFactory operatorWithName:@"\u2A04" limits:YES],
-                     @"bigsqcup" : [MTMathAtomFactory operatorWithName:@"\u2A06" limits:YES],
-                     
-                     // Latex command characters
-                     @"{" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"{"],
-                     @"}" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"}"],
-                     @"$" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"$"],
-                     @"&" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"&"],
-                     @"#" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"#"],
-                     @"%" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"%"],
-                     @"_" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"_"],
-                     @" " : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@" "],
-                     @"backslash" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\\"],
-                     
-                     // Punctuation
-                     // Note: \colon is different from : which is a relation
-                     @"colon" : [MTMathAtom atomWithType:kMTMathAtomPunctuation value:@":"],
-                     @"cdotp" : [MTMathAtom atomWithType:kMTMathAtomPunctuation value:@"\u00B7"],
-                     
-                     // Other symbols
-                     @"degree" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00B0"],
-                     @"neg" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00AC"],
-                     @"angstrom" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00C5"],
-                     @"|" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2016"],
-                     @"vert" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"|"],
-                     @"ldots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2026"],
-                     @"prime" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2032"],
-                     @"hbar" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u210F"],
-                     @"Im" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2111"],
-                     @"ell" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2113"],
-                     @"wp" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2118"],
-                     @"Re" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u211C"],
-                     @"mho" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2127"],
-                     @"aleph" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2135"],
-                     @"forall" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2200"],
-                     @"exists" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2203"],
-                     @"emptyset" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2205"],
-                     @"nabla" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2207"],
-                     @"infty" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u221E"],
-                     @"angle" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2220"],
-                     @"top" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22A4"],
-                     @"bot" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22A5"],
-                     @"vdots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22EE"],
-                     @"cdots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22EF"],
-                     @"ddots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22F1"],
-                     @"triangle" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u25B3"],
-                     @"imath" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D6A4"],
-                     @"jmath" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D6A5"],
-                     @"partial" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D715"],
-                     
-                     // Spacing
-                     @"," : [[MTMathSpace alloc] initWithSpace:3],
-                     @">" : [[MTMathSpace alloc] initWithSpace:4],
-                     @";" : [[MTMathSpace alloc] initWithSpace:5],
-                     @"!" : [[MTMathSpace alloc] initWithSpace:-3],
-                     @"quad" : [[MTMathSpace alloc] initWithSpace:18],  // quad = 1em = 18mu
-                     @"qquad" : [[MTMathSpace alloc] initWithSpace:36], // qquad = 2em
-                     
-                     // Style
-                     @"displaystyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleDisplay],
-                     @"textstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleText],
-                     @"scriptstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleScript],
-                     @"scriptscriptstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleScriptScript],
-                     }];
-        
+    {
+        static NSMutableDictionary<NSString*, MTMathAtom*>* commands = nil;
+        if (!commands) {
+            commands = [NSMutableDictionary dictionaryWithDictionary:@{
+                                                                       @"square" : [MTMathAtomFactory placeholder],
+                                                                       
+                                                                       // Greek characters
+                                                                       @"alpha" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B1"],
+                                                                       @"beta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B2"],
+                                                                       @"greekgamma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B3"],
+                                                                       @"greekdelta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B4"],
+                                                                       @"greekpi" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u03D6"],
+                                                                       @"varepsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B5"],
+                                                                       @"zeta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B6"],
+                                                                       @"eta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B7"],
+                                                                       @"theta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B8"],
+                                                                       @"thetav" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u03D1"],
+                                                                       @"iota" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03B9"],
+                                                                       @"kappa" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BA"],
+                                                                       @"lambda" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BB"],
+                                                                       @"mu" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BC"],
+                                                                       @"nu" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BD"],
+                                                                       @"greekxi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BE"],
+                                                                       @"omicron" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03BF"],
+                                                                       @"pi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C0"],
+                                                                       @"rho" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C1"],
+                                                                       @"varsigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C2"],
+                                                                       @"greeksigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C3"],
+                                                                       @"tau" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C4"],
+                                                                       @"upsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C5"],
+                                                                       @"phiv" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C6"],
+                                                                       @"chi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C7"],
+                                                                       @"psi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C8"],
+                                                                       @"greekomega" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03C9"],
+                                                                       // We mark the following greek chars as ordinary so that we don't try
+                                                                       // to automatically italicize them as we do with variables.
+                                                                       // These characters fall outside the rules of italicization that we have defined.
+                                                                       @"epsilon" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D716"],
+                                                                       @"vartheta" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D717"],
+                                                                       @"greekphi" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D719"],
+                                                                       @"varrho" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D71A"],
+                                                                       @"varpi" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D71B"],
+                                                                       // Capital greek characters
+                                                                       @"Gamma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0393"],
+                                                                       @"Delta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0394"],
+                                                                       @"Theta" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u0398"],
+                                                                       @"Lambda" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u039B"],
+                                                                       @"Xi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u039E"],
+                                                                       //@"Pi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A0"],
+                                                                       @"Sigma" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A3"],
+                                                                       @"Xupsilon" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A5"],
+                                                                       @"Phi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A6"],
+                                                                       @"Psi" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A8"],
+                                                                       @"Omega" : [MTMathAtom atomWithType:kMTMathAtomVariable value:@"\u03A9"],
+                                                                       @"emdash" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2014"],
+                                                                       @"ndash" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2013"],
+                                                                       @"hyphen" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2010"],
+                                                                       
+                                                                       // Open
+                                                                       @"lceil" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u2308"],
+                                                                       @"lfloor" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u230A"],
+                                                                       @"langle" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u27E8"],
+                                                                       @"lgroup" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"\u27EE"],
+                                                                       
+                                                                       // Close
+                                                                       @"rceil" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u2309"],
+                                                                       @"rfloor" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u230B"],
+                                                                       @"rangle" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u27E9"],
+                                                                       @"rgroup" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"\u27EF"],
+                                                                       
+                                                                       // Arrows
+                                                                       @"leftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2190"],
+                                                                       @"uparrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2191"],
+                                                                       @"to" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2192"],
+                                                                       @"downarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2193"],
+                                                                       @"leftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2194"],
+                                                                       @"updownarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2195"],
+                                                                       @"nwarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2196"],
+                                                                       @"nearrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2197"],
+                                                                       @"searrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2198"],
+                                                                       @"swarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2199"],
+                                                                       @"mapsto" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21A6"],
+                                                                       @"Leftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D0"],
+                                                                       //                                                                   @"Uparrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D1"],
+                                                                       @"DoubleRightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D2"],
+                                                                       //                                                                   @"Leftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D4"],
+                                                                       @"Updownarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u21D5"],
+                                                                       @"longleftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F5"],
+                                                                       @"longrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F6"],
+                                                                       @"longleftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F7"],
+                                                                       @"Longleftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F8"],
+                                                                       @"Longrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27F9"],
+                                                                       @"Longleftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27FA"],
+                                                                       
+                                                                       
+                                                                       // Relations
+                                                                       @"lessthanEqual" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolLessEqual],
+                                                                       @"ge" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolGreaterEqual],
+                                                                       @"notequal" : [MTMathAtom atomWithType:kMTMathAtomRelation value:MTSymbolNotEqual],
+                                                                       @"element" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2208"],
+                                                                       @"notin" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2209"],
+                                                                       @"gt" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u232A"],
+                                                                       @"lt" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2329"],
+                                                                       @"ni" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u220B"],
+                                                                       @"propto" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u221D"],
+                                                                       @"mid" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2223"],
+                                                                       @"parallel" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2225"],
+                                                                       @"sim" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u223C"],
+                                                                       @"simeq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2243"],
+                                                                       @"cong" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2245"],
+                                                                       @"approx" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2248"],
+                                                                       @"asymp" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u224D"],
+                                                                       @"doteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2250"],
+                                                                       @"equiv" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2261"],
+                                                                       @"gg" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u226A"],
+                                                                       @"ll" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u226B"],
+                                                                       @"precedes" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u227A"],
+                                                                       @"succ" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u227B"],
+                                                                       @"follows" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u227B"],
+                                                                       @"propsubset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2282"],
+                                                                       @"notpropsubset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2284"],
+                                                                       @"supset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2283"],
+                                                                       @"subset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2286"],
+                                                                       //@"supseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2287"],
+                                                                       @"eqsupset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2287"],
+                                                                       @"sqsubset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u228F"],
+                                                                       @"sqsupset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2290"],
+                                                                       @"sqsubseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2291"],
+                                                                       @"sqsupseteq" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2292"],
+                                                                       @"models" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u22A7"],
+                                                                       @"perp" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u27C2"],
+                                                                       @"notsubset" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2288"],
+                                                                       
+                                                                       // operators
+                                                                       @"times" : [MTMathAtomFactory times],
+                                                                       @"div"   : [MTMathAtomFactory divide],
+                                                                       @"plusminus"    : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u00B1"],
+                                                                       @"dagger" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2020"],
+                                                                       @"ddagger" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2021"],
+                                                                       @"mp"    : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2213"],
+                                                                       @"setminus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2216"],
+                                                                       @"star"   : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2217"],
+                                                                       @"compfn"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2218"],
+                                                                       @"bullet" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2219"],
+                                                                       @"wedge" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2227"],
+                                                                       @"vee" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2228"],
+                                                                       @"cap" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2229"],
+                                                                       @"cup" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u222A"],
+                                                                       @"wr" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2240"],
+                                                                       @"uplus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u228E"],
+                                                                       @"sqcap" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2293"],
+                                                                       @"sqcup" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2294"],
+                                                                       @"oplus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2295"],
+                                                                       @"ominus" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2296"],
+                                                                       @"otimes" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2297"],
+                                                                       @"oslash" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2298"],
+                                                                       @"odot" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2299"],
+                                                                       @"star"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u22C6"],
+                                                                       @"cdot"  : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u22C5"],
+                                                                       @"amalg" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2A3F"],
+                                                                       @"mathdiv" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u2215"],
+                                                                       
+                                                                       // No limit operators
+                                                                       @"log" : [MTMathAtomFactory operatorWithName:@"log" limits:NO],
+                                                                       @"lg" : [MTMathAtomFactory operatorWithName:@"lg" limits:NO],
+                                                                       @"ln" : [MTMathAtomFactory operatorWithName:@"ln" limits:NO],
+                                                                       @"sin" : [MTMathAtomFactory operatorWithName:@"sin" limits:NO],
+                                                                       @"arcsin" : [MTMathAtomFactory operatorWithName:@"arcsin" limits:NO],
+                                                                       @"sinh" : [MTMathAtomFactory operatorWithName:@"sinh" limits:NO],
+                                                                       @"cos" : [MTMathAtomFactory operatorWithName:@"cos" limits:NO],
+                                                                       @"arccos" : [MTMathAtomFactory operatorWithName:@"arccos" limits:NO],
+                                                                       @"cosh" : [MTMathAtomFactory operatorWithName:@"cosh" limits:NO],
+                                                                       @"tan" : [MTMathAtomFactory operatorWithName:@"tan" limits:NO],
+                                                                       @"arctan" : [MTMathAtomFactory operatorWithName:@"arctan" limits:NO],
+                                                                       @"tanh" : [MTMathAtomFactory operatorWithName:@"tanh" limits:NO],
+                                                                       @"cot" : [MTMathAtomFactory operatorWithName:@"cot" limits:NO],
+                                                                       @"coth" : [MTMathAtomFactory operatorWithName:@"coth" limits:NO],
+                                                                       @"sec" : [MTMathAtomFactory operatorWithName:@"sec" limits:NO],
+                                                                       @"sech" : [MTMathAtomFactory operatorWithName:@"sech" limits:NO],
+                                                                       @"csc" : [MTMathAtomFactory operatorWithName:@"csc" limits:NO],
+                                                                       @"csch" : [MTMathAtomFactory operatorWithName:@"csch" limits:NO],
+                                                                       @"arcsec" : [MTMathAtomFactory operatorWithName:@"arcsec" limits:NO],
+                                                                       @"arccot" : [MTMathAtomFactory operatorWithName:@"arccot" limits:NO],
+                                                                       @"arccsc" : [MTMathAtomFactory operatorWithName:@"arccsc" limits:NO],
+                                                                       @"arcsin" : [MTMathAtomFactory operatorWithName:@"arcsin" limits:NO],
+                                                                       @"arg" : [MTMathAtomFactory operatorWithName:@"arg" limits:NO],
+                                                                       @"ker" : [MTMathAtomFactory operatorWithName:@"ker" limits:NO],
+                                                                       @"dim" : [MTMathAtomFactory operatorWithName:@"dim" limits:NO],
+                                                                       @"hom" : [MTMathAtomFactory operatorWithName:@"hom" limits:NO],
+                                                                       @"exp" : [MTMathAtomFactory operatorWithName:@"exp" limits:NO],
+                                                                       
+                                                                       // Limit operators
+                                                                       @"lim" : [MTMathAtomFactory operatorWithName:@"lim" limits:YES],
+                                                                       @"limsup" : [MTMathAtomFactory operatorWithName:@"lim sup" limits:YES],
+                                                                       @"liminf" : [MTMathAtomFactory operatorWithName:@"lim inf" limits:YES],
+                                                                       @"max" : [MTMathAtomFactory operatorWithName:@"max" limits:YES],
+                                                                       @"min" : [MTMathAtomFactory operatorWithName:@"min" limits:YES],
+                                                                       //@"sup" : [MTMathAtomFactory operatorWithName:@"sup" limits:YES],
+                                                                       //@"inf" : [MTMathAtomFactory operatorWithName:@"inf" limits:YES],
+                                                                       @"det" : [MTMathAtomFactory operatorWithName:@"det" limits:YES],
+                                                                       @"Pr" : [MTMathAtomFactory operatorWithName:@"Pr" limits:YES],
+                                                                       @"gcd" : [MTMathAtomFactory operatorWithName:@"gcd" limits:YES],
+                                                                       
+                                                                       // Large operators
+                                                                       @"prod" : [MTMathAtomFactory operatorWithName:@"\u220F" limits:YES],
+                                                                       @"coprod" : [MTMathAtomFactory operatorWithName:@"\u2210" limits:YES],
+                                                                       @"sum" : [MTMathAtomFactory operatorWithName:@"\u2211" limits:NO],
+                                                                       @"sum_" : [MTMathAtomFactory operatorWithName:@"\u2211" limits:YES],
+                                                                       @"int" : [MTMathAtomFactory operatorWithName:@"\u222B" limits:NO],
+                                                                       @"int_" : [MTMathAtomFactory operatorWithName:@"\u222B" limits:YES],
+                                                                       @"oint" : [MTMathAtomFactory operatorWithName:@"\u222E" limits:NO],
+                                                                       @"bigwedge" : [MTMathAtomFactory operatorWithName:@"\u22C0" limits:YES],
+                                                                       @"bigvee" : [MTMathAtomFactory operatorWithName:@"\u22C1" limits:YES],
+                                                                       @"bigcap" : [MTMathAtomFactory operatorWithName:@"\u22C2" limits:YES],
+                                                                       @"bigcup" : [MTMathAtomFactory operatorWithName:@"\u22C3" limits:YES],
+                                                                       @"bigodot" : [MTMathAtomFactory operatorWithName:@"\u2A00" limits:YES],
+                                                                       @"bigoplus" : [MTMathAtomFactory operatorWithName:@"\u2A01" limits:YES],
+                                                                       @"bigotimes" : [MTMathAtomFactory operatorWithName:@"\u2A02" limits:YES],
+                                                                       @"biguplus" : [MTMathAtomFactory operatorWithName:@"\u2A04" limits:YES],
+                                                                       @"bigsqcup" : [MTMathAtomFactory operatorWithName:@"\u2A06" limits:YES],
+                                                                       
+                                                                       // Latex command characters
+                                                                       @"left{" : [MTMathAtom atomWithType:kMTMathAtomOpen value:@"{"],
+                                                                       @"right}" : [MTMathAtom atomWithType:kMTMathAtomClose value:@"}"],
+                                                                       @"$" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"$"],
+                                                                       @"&" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"&"],
+                                                                       @"#" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"#"],
+                                                                       @"%" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"%"],
+                                                                       @"_" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"_"],
+                                                                       @" " : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@" "],
+                                                                       @"backslash" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\\"],
+                                                                       @"circumflex" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"^"],
+                                                                       
+                                                                       // Punctuation
+                                                                       // Note: \colon is different from : which is a relation
+                                                                       @"colon" : [MTMathAtom atomWithType:kMTMathAtomPunctuation value:@":"],
+                                                                       @"cdotp" : [MTMathAtom atomWithType:kMTMathAtomPunctuation value:@"\u00B7"],
+                                                                       
+                                                                       // Other symbols
+                                                                       @"degree" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00B0"],
+                                                                       @"neg" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00AC"],
+                                                                       @"angstrom" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u00C5"],
+                                                                       @"|" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2016"],
+                                                                       @"vert" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"|"],
+                                                                       @"ldots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2026"],
+                                                                       @"prime" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2032"],
+                                                                       @"doubleprime" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2033"],
+                                                                       @"tripleprime" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2034"],
+                                                                       @"hbar" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u210F"],
+                                                                       @"Im" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2111"],
+                                                                       @"ell" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2113"],
+                                                                       @"wp" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2118"],
+                                                                       @"Re" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u211C"],
+                                                                       @"mho" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2127"],
+                                                                       @"aleph" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2135"],
+                                                                       @"forall" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2200"],
+                                                                       @"exists" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2203"],
+                                                                       @"empty" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2205"],
+                                                                       @"nabla" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2207"],
+                                                                       @"infty" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u221E"],
+                                                                       @"angle" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2220"],
+                                                                       @"top" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22A4"],
+                                                                       @"bot" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22A5"],
+                                                                       @"vdots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22EE"],
+                                                                       @"cdots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22EF"],
+                                                                       @"ddots" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u22F1"],
+                                                                       @"triangle" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u25B3"],
+                                                                       @"imath" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D6A4"],
+                                                                       @"jmath" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D6A5"],
+                                                                       @"partiald" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\U0001D715"],
+                                                                       @"lsqBracket" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uff3b"],
+                                                                       @"rsqBracket" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uff3d"],
+//                                                                       @"lCurlyBrace" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uff5b"],
+//                                                                       @"rCurlyBrace" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uff5d"],
+                                                                       @"lParen" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uff08"],
+                                                                       @"rParen" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\uFF09"],
+                                                                       @"verticaldBar" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u2016"],
+                                                                       
+                                                                       //Currency Symbols
+                                                                       @"cent" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u00A2"],
+                                                                       @"pound" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u00A3"],
+                                                                       @"yen" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u00A5"],
+                                                                       @"euro" : [MTMathAtom atomWithType:kMTMathAtomBinaryOperator value:@"\u20AC"],
+                                                                       @"ldquo" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u201C"],
+                                                                       @"rdquo" : [MTMathAtom atomWithType:kMTMathAtomOrdinary value:@"\u201D"],
+                                                                       
+                                                                       //Accents
+                                                                       @"sidot" : [MTMathAtomFactory accentWithName:@"sidot"],
+                                                                       // Spacing
+                                                                       @"," : [[MTMathSpace alloc] initWithSpace:3],
+                                                                       @">" : [[MTMathSpace alloc] initWithSpace:4],
+                                                                       @";" : [[MTMathSpace alloc] initWithSpace:5],
+                                                                       @"!" : [[MTMathSpace alloc] initWithSpace:-3],
+                                                                       @"quad" : [[MTMathSpace alloc] initWithSpace:18],  // quad = 1em = 18mu
+                                                                       @"qquad" : [[MTMathSpace alloc] initWithSpace:36], // qquad = 2em
+                                                                       
+                                                                       // Style
+                                                                       @"displaystyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleDisplay],
+                                                                       @"textstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleText],
+                                                                       @"scriptstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleScript],
+                                                                       @"scriptscriptstyle" : [[MTMathStyle alloc] initWithStyle:kMTLineStyleScriptScript],
+                                                                       }];
+            
+        }
+        return commands;
     }
-    return commands;
-}
 
 + (NSDictionary*) aliases
 {
@@ -695,14 +777,13 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                     @"lnot" : @"neg",
                     @"land" : @"wedge",
                     @"lor" : @"vee",
-                    @"ne" : @"neq",
-                    @"le" : @"leq",
-                    @"ge" : @"geq",
+                    @"ne" : @"ne",
+                    @"le" : @"le",
+                    @"ge" : @"ge",
                     @"lbrace" : @"{",
                     @"rbrace" : @"}",
                     @"Vert" : @"|",
                     @"gets" : @"leftarrow",
-                    @"to" : @"rightarrow",
                     @"iff" : @"Longleftrightarrow",
                     @"AA" : @"angstrom",
                     };
@@ -751,7 +832,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                     @"acute" : @"\u0301",
                     @"hat" : @"\u0302",  // In our implementation hat and widehat behave the same.
                     @"tilde" : @"\u0303", // In our implementation tilde and widetilde behave the same.
-                    @"bar" : @"\u0304",
+                    @"overbar" : @"\u0304",
                     @"breve" : @"\u0306",
                     @"dot" : @"\u0307",
                     @"ddot" : @"\u0308",
@@ -759,6 +840,12 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                     @"vec" : @"\u20D7",
                     @"widehat" : @"\u0302",
                     @"widetilde" : @"\u0303",
+                    @"doubleoverbar":@"\u033F",
+                    @"underbar": [NSString stringWithFormat:@"%c", 0x005F],
+                    @"doubleunderbar": @"\u0333",
+                    @"underbrace": @"\u23DF",
+                    @"overbrace": @"\u23DE",
+                    @"sidot": @"\u0307"
                     };
     }
     return accents;
@@ -802,8 +889,8 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                    @")" : @")",
                    @"[" : @"[",
                    @"]" : @"]",
-                   @"<" : @"\u2329",
-                   @">" : @"\u232A",
+                   @"lt" : @"\u2329",
+                   @"gt" : @"\u232A",
                    @"/" : @"/",
                    @"\\" : @"\\",
                    @"|" : @"|",
