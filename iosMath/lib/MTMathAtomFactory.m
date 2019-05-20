@@ -535,7 +535,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                                                                        // Arrows
                                                                        @"leftarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2190"],
                                                                        @"uparrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2191"],
-                                                                       @"to" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2192"],
+                                                                       @"rightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2192"],
                                                                        @"downarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2193"],
                                                                        @"leftrightarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2194"],
                                                                        @"updownarrow" : [MTMathAtom atomWithType:kMTMathAtomRelation value:@"\u2195"],
@@ -784,6 +784,7 @@ NSString *const MTSymbolDegree = @"\u00B0"; // \circ
                     @"rbrace" : @"}",
                     @"Vert" : @"|",
                     @"gets" : @"leftarrow",
+                    @"to" : @"rightarrow",
                     @"iff" : @"Longleftrightarrow",
                     @"AA" : @"angstrom",
                     };
