@@ -69,7 +69,7 @@ repository as a git submodule to your git-tracked project.
 add `libIosMath.a`. You might also need to add `iosMath` to
 the Target Dependencies list.
 4. Add the `MathFontBundle` to the list of `Copy Bundle Resources`.
-5. Include IosMath wherever you need it with `#import <IosMath/IosMath.h>`.
+5. Include IosMath wherever you need it with `#import <iosMath/IosMath.h>`.
 
 ## Usage
 
