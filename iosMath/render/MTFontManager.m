@@ -57,7 +57,7 @@ const int kDefaultFontSize = 20;
 
 - (MTFont *)latinModernFontWithSize:(CGFloat)size
 {
-    return [self fontWithName:@"latinmodern-math" size:size];
+  return [self fontWithName:@"latinmodern-math" size:size];
 }
 
 - (MTFont *)xitsFontWithSize:(CGFloat)size
@@ -72,7 +72,7 @@ const int kDefaultFontSize = 20;
 
 - (MTFont *)defaultFont
 {
-    return [self latinModernFontWithSize:kDefaultFontSize];
+    return [self stix2FontWithSize:kDefaultFontSize];
 }
 
 - (MTFont *)systemFontWithSize:(CGFloat)size
@@ -80,6 +80,11 @@ const int kDefaultFontSize = 20;
     UIFont *systemFont = [UIFont systemFontOfSize:size];
     //SanFranciscoText
     return [self fontWithName:[NSString stringWithFormat:@"%@",systemFont.fontName] size:size];
+}
+
+- (MTFont *)stix2FontWithSize:(CGFloat)size
+{
+    return [self fontWithName:@"STIX2Math" size:size];
 }
 
 @end

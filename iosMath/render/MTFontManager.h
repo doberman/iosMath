@@ -41,5 +41,8 @@
 /** Helper function to return the Latin Modern Math font. */
 - (nonnull MTFont*) latinModernFontWithSize:(CGFloat) size;
 
+/** Helper function to return the Stix2 font. */
+- (nonnull MTFont*) stix2FontWithSize:(CGFloat) size;
+
 - (nonnull MTFont *)systemFontWithSize:(CGFloat)size;
 @end
