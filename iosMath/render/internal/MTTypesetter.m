@@ -252,9 +252,9 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             // This is not a TeX type node. TeX does this during parsing the input.
             // switch to using the italic math font
             // We convert it to ordinary
-            //NSString* italics = mathItalicize(atom.nucleus);
+            NSString* italics = mathItalicize(atom.nucleus);
             atom.type = kMTMathAtomOrdinary;
-            //atom.nucleus = italics;
+            atom.nucleus = italics;
         } else if (atom.type == kMTMathAtomNumber || atom.type == kMTMathAtomUnaryOperator) {
             // Neither of these are TeX nodes. TeX treats these as Ordinary. So will we.
             atom.type = kMTMathAtomOrdinary;
@@ -369,7 +369,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomRadical: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -397,7 +397,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
                 break;
             }
             case kMTMathAtomExponentBase: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -414,7 +414,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
                 
                 
             case kMTMathAtomOrderedPair: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -431,7 +431,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomBinomialMatrix: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -447,7 +447,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
                 break;
             }
             case kMTMathAtomAbsoluteValue: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -464,7 +464,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomFraction: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -483,7 +483,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomLargeOperator: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -503,7 +503,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomInner: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -528,7 +528,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomUnderline: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -550,7 +550,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomOverline: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -572,7 +572,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomAccent: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -595,7 +595,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             }
                 
             case kMTMathAtomTable: {
-                _font = [[MTFontManager fontManager] latinModernFontWithSize:fontSize];
+                _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                 self.style = _style;
                 // stash the existing layout
                 if (_currentLine.length > 0) {
@@ -622,7 +622,7 @@ static void getBboxDetails(CGRect bbox, CGFloat* ascent, CGFloat* descent)
             case kMTMathAtomPunctuation: {
                 
                 if(atom.type != kMTMathAtomPlaceholder) {
-                    _font = [[MTFontManager fontManager] systemFontWithSize:fontSize];
+                    _font = [[MTFontManager fontManager] defaultFontWithSize:fontSize];
                     self.style = _style;
                 }
                 // the rendering for all the rest is pretty similar
