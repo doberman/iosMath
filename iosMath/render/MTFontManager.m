@@ -87,4 +87,9 @@ const int kDefaultFontSize = 20;
     return [self fontWithName:@"STIX2Math" size:size];
 }
 
+- (MTFont *)defaultFontWithSize:(CGFloat)size
+{
+    return [self stix2FontWithSize:size];
+}
+
 @end

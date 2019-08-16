@@ -45,4 +45,6 @@
 - (nonnull MTFont*) stix2FontWithSize:(CGFloat) size;
 
 - (nonnull MTFont *)systemFontWithSize:(CGFloat)size;
+
+- (nonnull MTFont *)defaultFontWithSize:(CGFloat)size;
 @end
