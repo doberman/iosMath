@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1CC48E8D526E9958A3D45383 /* libPods-iosMathTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 33459E3F7CC9ECC36CCA7414 /* libPods-iosMathTests.a */; };
+		36E1C9612307172800F47508 /* STIX2Math.otf in Resources */ = {isa = PBXBuildFile; fileRef = 36E1C95F2307172800F47508 /* STIX2Math.otf */; };
+		36E1C9622307172800F47508 /* STIX2Math.plist in Resources */ = {isa = PBXBuildFile; fileRef = 36E1C9602307172800F47508 /* STIX2Math.plist */; };
 		490465BF1D23DA8400F82033 /* MTTypesetterTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 490465BE1D23DA8400F82033 /* MTTypesetterTest.m */; };
 		492EED0817DAEDD200939107 /* MTFontManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 492EECFA17DAED9000939107 /* MTFontManager.m */; };
 		492EED0917DAEDD200939107 /* MTFontMathTable.m in Sources */ = {isa = PBXBuildFile; fileRef = 492EECF817DAED9000939107 /* MTFontMathTable.m */; };
@@ -75,6 +77,8 @@
 /* Begin PBXFileReference section */
 		11BDFD1AB91580A33D83C75E /* libPods-iosMathExample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-iosMathExample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		33459E3F7CC9ECC36CCA7414 /* libPods-iosMathTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-iosMathTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		36E1C95F2307172800F47508 /* STIX2Math.otf */ = {isa = PBXFileReference; lastKnownFileType = file; name = STIX2Math.otf; path = fonts/STIX2Math.otf; sourceTree = SOURCE_ROOT; };
+		36E1C9602307172800F47508 /* STIX2Math.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = STIX2Math.plist; path = fonts/STIX2Math.plist; sourceTree = SOURCE_ROOT; };
 		490465BE1D23DA8400F82033 /* MTTypesetterTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MTTypesetterTest.m; sourceTree = "<group>"; };
 		492EECF317DAED9000939107 /* MTMathListDisplay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MTMathListDisplay.h; sourceTree = "<group>"; };
 		492EECF417DAED9000939107 /* MTMathUILabel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MTMathUILabel.h; sourceTree = "<group>"; };
@@ -320,6 +324,8 @@
 		49A27B0418EBF5B30030B7EF /* MathFontBundle */ = {
 			isa = PBXGroup;
 			children = (
+				36E1C95F2307172800F47508 /* STIX2Math.otf */,
+				36E1C9602307172800F47508 /* STIX2Math.plist */,
 				49DEC80F1CF3C69E000053CD /* xits-math.plist */,
 				49DEC8101CF3C69E000053CD /* xits-math.otf */,
 				49DEC8111CF3C69E000053CD /* texgyretermes-math.plist */,
@@ -508,6 +514,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 49965EF317CBBA2700A555C5;
@@ -548,6 +555,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				36E1C9612307172800F47508 /* STIX2Math.otf in Resources */,
 				49DEC81A1CF3C69E000053CD /* latinmodern-math.otf in Resources */,
 				49DEC8181CF3C69E000053CD /* texgyretermes-math.otf in Resources */,
 				49DEC8161CF3C69E000053CD /* xits-math.otf in Resources */,
@@ -555,6 +563,7 @@
 				49DEC8171CF3C69E000053CD /* texgyretermes-math.plist in Resources */,
 				49DEC8151CF3C69E000053CD /* xits-math.plist in Resources */,
 				49A27B0918EBF5B30030B7EF /* InfoPlist.strings in Resources */,
+				36E1C9622307172800F47508 /* STIX2Math.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
