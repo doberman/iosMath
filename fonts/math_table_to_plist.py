@@ -4,7 +4,7 @@ import sys
 from fontTools.ttLib import TTFont
 
 def usage(code):
-    print 'Usage math_table_to_plist.py <fontfile> <plistfile>'
+    print('Usage math_table_to_plist.py <fontfile> <plistfile>')
     sys.exit(code)
 
 def process_font(font_file, out_file):
@@ -112,9 +112,12 @@ def get_italic_correction(math_table):
     for i in xrange(count):
         name = glyphs[i]
         record = records[i]
+
         if record.DeviceTable is not None:
-            raise "Don't know how to process device table for italic correction."
-        italic_dict[name] = record.Value
+            pass
+            # raise "Don't know how to process device table for italic correction."
+        else:
+            italic_dict[name] = record.Value
     return italic_dict
 
 def get_accent_attachments(math_table):
@@ -133,8 +136,10 @@ def get_accent_attachments(math_table):
         name = glyphs[i]
         record = records[i]
         if record.DeviceTable is not None:
-            raise "Don't know how to process device table for accent attachment."
-        attach_dict[name] = record.Value
+            pass
+            # raise "Don't know how to process device table for accent attachment."
+        else:
+            attach_dict[name] = record.Value
     return attach_dict
 
 def get_v_variants(math_table):
